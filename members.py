@@ -1,41 +1,45 @@
 from math import sqrt
-from py_bridge_designer.parameters import Params, Section
+from py_bridge_designer.parameters import Params
+
 
 def _world_coords(grid, grid_size):
     """Converts grid coordinates to physical world coordinates"""
     return grid * grid_size
-    
+
+
 class Joint():
     def __init__(self, number: int, x: int, y: int):
         self.number = number
         self.x = x
         self.y = y
 
+
 class CrossSection():
-    def __init__(self, 
-                 parameters: Params, 
-                 material_index: int, 
-                 section: Section, 
+    def __init__(self,
+                 parameters: Params,
+                 material_index: int,
+                 section: int,
                  size: int):
-        self.material = parameters.materials[material_index] # Between 0 and 2
-        self.section = section # either Bar or Tube
-        self.size = size # Between 0 and 32
+        self.material = parameters.materials[material_index]  # Between 0 and 2
+        self.section = section  # either 0 for Bar or 1 for Tube
+        self.size = size  # Between 0 and 32
+
 
 class Member():
-    def __init__(self, 
-        number: int, 
-        start_joint: Joint, 
-        end_joint: Joint, 
-        cross_section: CrossSection, 
-        grid_size: float):
-        
+    def __init__(self,
+                 number: int,
+                 start_joint: Joint,
+                 end_joint: Joint,
+                 cross_section: CrossSection,
+                 grid_size: float):
+
         self.number = number
-        self.start_joint = start_joint 
-        self.end_joint = end_joint 
+        self.start_joint = start_joint
+        self.end_joint = end_joint
         self.cross_section = cross_section
         self.compression = 0.0
         self.tension = 0.0
-        
+
         # ======================
         # Setup Member Geometry
         # ======================
