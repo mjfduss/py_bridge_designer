@@ -8,7 +8,8 @@ ARCH_SUPPORT = 1
 CABLE_SUPPORT_LEFT = 2
 CABLE_SUPPORT_BOTH = 4
 INTERMEDIATE_SUPPORT = 8
-HI_NOT_LO = 16
+LOW_PIER = 0
+HIGH_PIER = 1
 
 
 class ScenarioDescriptor():
@@ -36,8 +37,7 @@ class LoadScenario():
 
         self.support_type = 0
         # digit 10 => (0 = low pier, 1 = high pier)
-        if (self.desc.id[9] > '0'):
-            self.support_type = HI_NOT_LO
+        self.pier_type = HIGH_PIER if int(self.desc.id[9]) > 0 else LOW_PIER
 
         # digit 9 => panel point at which pier is located. (0 = no pier).
         self.intermediate_support_joint_no = int(self.desc.id[8])
@@ -81,7 +81,7 @@ class LoadScenario():
         # ================================
 
         # Add one prescribed joint for the intermediate support, if any.
-        if ((self.support_type == INTERMEDIATE_SUPPORT) and (self.support_type != HI_NOT_LO)):
+        if ((self.support_type == INTERMEDIATE_SUPPORT) and (self.pier_type != HIGH_PIER)):
             n_prescribed_joints += 1
 
         # Another two for the arch base, if we have an arch.
@@ -113,7 +113,7 @@ class LoadScenario():
             joint_index += 1
 
         # Loop leaves joint_index pointing at next joint.  Add the low intermediate support, if any.
-        if ((self.support_type == INTERMEDIATE_SUPPORT) and (self.support_type != HI_NOT_LO)):
+        if ((self.support_type == INTERMEDIATE_SUPPORT) and (self.pier_type != HIGH_PIER)):
             x = (self.intermediate_support_joint_no - 1) * panel_size
             x_values.append(x)
             self.prescribed_joints.append(
