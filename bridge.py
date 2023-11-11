@@ -33,8 +33,16 @@ class Bridge():
         self.parameters = Params()
         self.n_members = 0
         self.members = []  # type: List[Member]
+        self.member_coords = dict()
         self.max_y = 32
         self.min_y = -96
+        self.matrix_x = 241
+        self.matrix_y = 129
+        self.max_joints = 129
+        self.at_max_joints = False
+        self.max_material_types = 3
+        self.max_section_types = 2
+        self.max_section_size = 33
 
     def add_joint(self, coords: Tuple[int, int]) -> bool:
         """Adds a joint to the Bridge. 
@@ -47,6 +55,11 @@ class Bridge():
         """
         x = coords[0]
         y = coords[1]
+
+        # Check if the bridge has reached the maximum amount of joints
+        if self.n_joints == self.max_joints:
+            self.at_max_joints = True
+            return False  # joint rejected
 
         # Check if joint coordinates are outside of bounds of the bridge's load scenario
         # check x
@@ -98,8 +111,8 @@ class Bridge():
                 return False  # member rejected
 
         # Get joints
-        start_joint = self.joint_coords[(start_x, start_y)]
-        end_joint = self.joint_coords[(end_x, end_y)]
+        start_joint: Joint = self.joint_coords[(start_x, start_y)]
+        end_joint: Joint = self.joint_coords[(end_x, end_y)]
 
         # TODO: ?CLAMP DOWN INPUT for material_index, section_index, and size?
 
@@ -111,6 +124,7 @@ class Bridge():
             size=size
         )
 
+        # Add the member
         self.n_members += 1
         member = Member(
             number=self.n_members,
@@ -120,5 +134,51 @@ class Bridge():
             grid_size=self.load_scenario.grid_size
         )
         self.members.append(member)
+        self.member_coords[start_joint.number] = end_joint.number
+        self.member_coords[end_joint.number] = start_joint.number
 
         return True  # member added
+
+    def _zeros(self) -> List[List[int]]:
+        zeros = []
+        for _ in range(self.matrix_y):
+            row = []
+            for _ in range(self.matrix_x):
+                row.append(0)
+            zeros.append(row)
+        return zeros
+
+    def get_state(self) -> List[List[List[int]]]:
+        """Get the current state of the bridge as an 3D adjacency tensor
+        Returns:
+            An adjacency tensor in the shape (2, self.matrix_y, self.matrix_x) with values {0,1}
+            1st matrix representing the joint coordinates
+                - 1 if a joint exists at that (x,y) position and 0 otherwise
+            2nd matrix representing the member connections
+                - 1 if a member exists between that joint and 0 otherwise
+                - Technically, only the shape (self.matrix_y, self.matrix_y) is considered and the rest is padded
+        """
+
+        coord_matrix = self._zeros()  # initialize the 1st matrix to all zeros
+        match_count = 0
+        for y in range(self.matrix_y):
+            for x in range(self.matrix_x):
+                # Convert adjacency index values to coordinate values
+                x_coord = x - 32
+                y_coord = y - 96
+                if (x_coord, y_coord) in self.joint_coords:
+                    # Use adjacency index values
+                    coord_matrix[y][x] = 1
+
+        member_matrix = self._zeros()
+        for i in range(self.max_joints):
+            joint_number = i + 1
+            if joint_number in self.member_coords:
+                # Adjust the 1-based joint_numbers for the 0-based matrix index
+                start_joint = joint_number - 1
+                end_joint = self.member_coords[joint_number] - 1
+                # Add the adjacency numbers
+                member_matrix[start_joint][end_joint] = 1
+                member_matrix[end_joint][start_joint] = 1
+
+        return [coord_matrix, member_matrix]
