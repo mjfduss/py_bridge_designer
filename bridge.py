@@ -43,6 +43,8 @@ class Bridge():
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
+        self.n_load_instances = 0
+        self.load_instances: List[List[float]] = None
 
     def add_joint(self, coords: Tuple[int, int]) -> bool:
         """Adds a joint to the Bridge. 
@@ -180,3 +182,20 @@ class Bridge():
                 member_matrix[end_joint][start_joint] = 1
 
         return [coord_matrix, member_matrix]
+
+    def _setup_load_instances(self):
+        self.n_equations = self.n_joints * 2
+        self.n_load_instances = self.load_scenario.n_loaded_joints + 1
+        self.load_instances = []
+        for _ in range(self.n_load_instances + 1):
+            point_load = []
+            for _ in range(self.n_equations + 1):
+                point_load.append(0.0)
+            self.load_instances.append(point_load)
+
+    def _apply_loads(self):
+        '''Insert logic to see if point_loads object needs to be updated,
+        add a last_n_joints tracker'''
+
+    def analyze(self):
+        ...
