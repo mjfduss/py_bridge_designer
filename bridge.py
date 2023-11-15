@@ -3,17 +3,13 @@ from enum import Enum
 from py_bridge_designer.members import Joint, CrossSection, Member
 from py_bridge_designer.scenario import LoadScenario
 from py_bridge_designer.parameters import Params
+from py_bridge_designer.analysis import Analysis
 
 
 class BridgeError(Enum):
-    BridgeNoError = 1
-    BridgeTooManyElements = 2
-    BridgeTooFewJoints = 3
-    BridgeWrongPrescribedJoints = 4
-    BridgeTooFewMembers = 5
-    BridgeDupJoints = 6
-    BridgeDupMembers = 7
-    BridgeJointOnMember = 8
+    BridgeNoError = 0
+    BridgeAtMaxJoints = 1
+    BridgeJointOutOfBounds = 2
 
 
 class Bridge():
@@ -21,7 +17,7 @@ class Bridge():
         self.error = BridgeError.BridgeNoError
         self.load_scenario = LoadScenario(load_scenario_index)
 
-        # Fill contents of bridge joints and members from its load scenario
+        # Fill contents of bridge joints from its load scenario
         self.n_joints = self.load_scenario.n_prescribed_joints
         self.joints = []  # type: List[Joint]
         self.joint_coords = dict()
@@ -39,14 +35,16 @@ class Bridge():
         self.matrix_x = 242
         self.matrix_y = 130
         self.max_joints = 130  # it is best if max joints and maxtrix_y are the same value
-        self.at_max_joints = False
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
         self.n_load_instances = 0
-        self.load_instances: List[List[float]] = None
 
-    def add_joint(self, coords: Tuple[int, int]) -> bool:
+    # ===========================================
+    # Joints and Members Functions
+    # ===========================================
+
+    def _add_joint(self, coords: Tuple[int, int]) -> bool:
         """Adds a joint to the Bridge. 
         If either the 'start' or 'end' joints are out of bounds, the joint will be rejected.
 
@@ -60,7 +58,7 @@ class Bridge():
 
         # Check if the bridge has reached the maximum amount of joints
         if self.n_joints == self.max_joints:
-            self.at_max_joints = True
+            self.error = BridgeError.BridgeAtMaxJoints
             return False  # joint rejected
 
         # Check if joint coordinates are outside of bounds of the bridge's load scenario
@@ -68,9 +66,11 @@ class Bridge():
         if x > self.load_scenario.max_x or x < self.load_scenario.min_x:
             # Make sure x is not a cable anchor
             if self.load_scenario.cable_anchors_x is not None and x not in self.load_scenario.cable_anchors_x:
+                self.error = BridgeError.BridgeJointOutOfBounds
                 return False  # joint rejected
         # check y
         if y > self.max_y or y < self.min_y:
+            self.error = BridgeError.BridgeJointOutOfBounds
             return False  # joint rejected
 
         # Add the joint
@@ -104,13 +104,13 @@ class Bridge():
         """
         # Check if joints already exists
         if not (start_x, start_y) in self.joint_coords:
-            joint_accepted = self.add_joint(coords=(start_x, start_y))
+            joint_accepted = self._add_joint(coords=(start_x, start_y))
             if not joint_accepted:
-                return False  # member rejected
+                return False  # member rejected because of joint
         if not (end_x, end_y) in self.joint_coords:
-            joint_accepted = self.add_joint(coords=(end_x, end_y))
+            joint_accepted = self._add_joint(coords=(end_x, end_y))
             if not joint_accepted:
-                return False  # member rejected
+                return False  # member rejected because of joint
 
         # Get joints
         start_joint: Joint = self.joint_coords[(start_x, start_y)]
@@ -138,6 +138,10 @@ class Bridge():
         self.member_coords[end_joint.number] = start_joint.number
 
         return True  # member added
+
+    # ===========================================
+    # Observation Functions
+    # ===========================================
 
     def _zeros(self) -> List[List[int]]:
         zeros = []
@@ -183,6 +187,10 @@ class Bridge():
 
         return [coord_matrix, member_matrix]
 
+    # ===========================================
+    # Analysis Functions
+    # ===========================================
+
     def _setup_load_instances(self):
         self.n_equations = self.n_joints * 2
         self.n_load_instances = self.load_scenario.n_loaded_joints + 1
@@ -193,8 +201,62 @@ class Bridge():
                 point_load.append(0.0)
             self.load_instances.append(point_load)
 
-    def _apply_loads(self):
-        self._setup_load_instances()
+    def _apply_self_weights(self):
+        for member in self.members:
+            dead_load: float = self.parameters.dead_load_factor * \
+                self.parameters.shapes[member.cross_section.section][member.cross_section.size].area * \
+                member.length * member.cross_section.material.density * \
+                9.8066 / 2.0 / 1000.0
 
-    def analyze(self):
-        self._apply_loads()
+            force_point_1 = 2 * member.start_joint.number
+            force_point_2 = 2 * member.end_joint.number
+
+            for point_load in self.load_instances:
+                point_load[force_point_1] -= dead_load
+                point_load[force_point_2] -= dead_load
+
+    def _apply_dead_load(self):
+        load_scenario = self.load_scenario
+        load_case = self.parameters.load_cases[load_scenario.load_case]
+
+        for joint in self.joints:
+            force_point = 2 * joint.number
+            for point_load in self.load_instances:
+                load = load_case.point_dead_load
+                # Account for the ends of the bridge deck
+                if (joint.number == 1 or joint.number == load_scenario.n_loaded_joints):
+                    load /= 2  # divide load by 2
+                point_load[force_point] -= load
+
+    def _apply_live_load(self):
+        load_case = self.parameters.load_cases[self.load_scenario.load_case]
+        for i in range(2, self.n_load_instances):
+            point_load = self.load_instances[i]
+            force_point_front = 2 * i
+            force_point_rear = force_point_front - 2
+            point_load[force_point_front] -= self.parameters.live_load_factor * \
+                load_case.front_axle_load
+            point_load[force_point_rear] -= self.parameters.live_load_factor * \
+                load_case.rear_axle_load
+
+    def _apply_loads(self, test_print=False):
+        self._setup_load_instances()
+        self._apply_self_weights()
+        self._apply_dead_load()
+        self._apply_live_load()
+
+        if test_print:
+            for i in range(1, self.n_load_instances + 1):
+                point_load = self.load_instances[i]
+                print("Point Loads Load Case", i)
+                print("Jnt #      X           Y")
+                print("----- ----------- -----------")
+                for joint in self.joints:
+                    print("%5d %11.5f %11.5f" % (
+                        joint.number, point_load[2 * joint.number - 1], point_load[2 * joint.number]))
+
+    def analyze(self, test_print=False) -> Tuple[bool, float]:
+        self._apply_loads(test_print)
+        analysis = Analysis(bridge=self, test_print=test_print)
+        valid, cost = analysis.get_results()
+        return valid, cost

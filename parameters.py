@@ -116,7 +116,8 @@ class Params():
         # ===================
         # Setup Materials
         # ===================
-        self.materials = []                         # Descriptions of available materials
+        # Descriptions of available materials
+        self.materials: List[Material] = []
         self.materials.append(
             Material(name="Carbon Steel (A36)",
                      short_name="CS",

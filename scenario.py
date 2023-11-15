@@ -157,7 +157,8 @@ class LoadScenario():
         if (self.support_type == CABLE_SUPPORT_BOTH):
             x = self.prescribed_joints[self.n_loaded_joints -
                                        1].x + CABLE_ANCHORAGE_X_OFFSET
-            self.cable_anchors_x.append(x)
+            if self.cable_anchors_x is not None:
+                self.cable_anchors_x.append(x)
             self.prescribed_joints.append(
                 Joint(number=joint_index + 1,
                       x=x,
