@@ -194,8 +194,7 @@ class Bridge():
             self.load_instances.append(point_load)
 
     def _apply_loads(self):
-        '''Insert logic to see if point_loads object needs to be updated,
-        add a last_n_joints tracker'''
+        self._setup_load_instances()
 
     def analyze(self):
-        ...
+        self._apply_loads()
