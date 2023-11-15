@@ -36,9 +36,9 @@ class Bridge():
         self.member_coords = dict()
         self.max_y = 32
         self.min_y = -96
-        self.matrix_x = 241
-        self.matrix_y = 129
-        self.max_joints = 129
+        self.matrix_x = 242
+        self.matrix_y = 130
+        self.max_joints = 130  # it is best if max joints and maxtrix_y are the same value
         self.at_max_joints = False
         self.max_material_types = 3
         self.max_section_types = 2
@@ -113,8 +113,6 @@ class Bridge():
         # Get joints
         start_joint: Joint = self.joint_coords[(start_x, start_y)]
         end_joint: Joint = self.joint_coords[(end_x, end_y)]
-
-        # TODO: ?CLAMP DOWN INPUT for material_index, section_index, and size?
 
         # Set Cross Section
         cross_section = CrossSection(
