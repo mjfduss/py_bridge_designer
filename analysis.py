@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
-from typing import TYPE_CHECKING, List, Tuple
-from py_bridge_designer.scenario import CABLE_ANCHORAGE_X_OFFSET, ARCH_SUPPORT, CABLE_SUPPORT_LEFT, CABLE_SUPPORT_BOTH, INTERMEDIATE_SUPPORT, HIGH_PIER
+from typing import TYPE_CHECKING, Tuple
+from py_bridge_designer.scenario import ARCH_SUPPORT, CABLE_SUPPORT_LEFT, CABLE_SUPPORT_BOTH, INTERMEDIATE_SUPPORT, HIGH_PIER
 
 
 if TYPE_CHECKING:
@@ -62,6 +62,16 @@ class Analysis():
         self.n_equations = self._bridge.n_joints * 2
         self.stiffness = [
             [0.0 for _ in range(self.n_equations)] for _ in range(self.n_equations)
+        ]
+
+        # Initialize the dispacement matrix
+        self.displacement = [
+            [0.0 for _ in range(self._bridge.n_load_instances)] for _ in range(self.n_equations)
+        ]
+
+        # Initialize the member_force matrix
+        self.member_force = [
+            [0.0 for _ in range(self._bridge.n_load_instances)] for _ in range(self._bridge.n_members)
         ]
 
     def _apply_restraints(self):
@@ -136,6 +146,10 @@ class Analysis():
         prev_x = self._get_stiffness(i, j)
         self._set_stiffness(i, j, prev_x - x)
 
+    def _divide_stiffness(self, i: int, j: int, x: float):
+        prev_x = self._get_stiffness(i, j)
+        self._set_stiffness(i, j, prev_x / x)
+
     def _apply_initial_stiffness(self):
         for member in self._bridge.members:
             j1 = member.start_joint.number
@@ -170,12 +184,93 @@ class Analysis():
             self._increment_stiffness(j22, j22, yy)
 
     def _apply_support_restraints(self):
-        ...
+        for point_load in self._bridge.load_instances:
+            for joint_index in range(1, self._bridge.n_joints + 1):
+                if self.x_restraints[joint_index]:
+                    i2m1 = 2 * joint_index - 1
+                    for j in range(1, self.n_equations + 1):
+                        self._set_stiffness(i2m1, j, 0.0)
+                        self._set_stiffness(j, i2m1, 0.0)
+                    self._set_stiffness(i2m1, i2m1, 1.0)
+                    point_load[i2m1] = 0.0
+                if self.y_restraints[joint_index]:
+                    i2 = 2 * joint_index
+                    for j in range(1, self.n_equations + 1):
+                        self._set_stiffness(i2, j, 0.0)
+                        self._set_stiffness(j, i2, 0.0)
+                    self._set_stiffness(i2, i2, 1.0)
+                    point_load[i2] = 0.0
+
+    def _invert(self) -> bool:
+        for equation_index in range(1, self.n_equations + 1):
+            pivot = self._get_stiffness(equation_index, equation_index)
+            if abs(pivot) < 0.99:
+                self.error = AnalysisError.AnalysisBadPivot
+                return False
+
+            pivr = 1.0 / pivot
+            for k in range(1, self.n_equations + 1):
+                self._divide_stiffness(equation_index, k, pivot)
+
+            for k in range(1, self.n_equations + 1):
+                if k != equation_index:
+                    pivot = self._get_stiffness(k, equation_index)
+                    for j in range(1, self.n_equations + 1):
+                        decrement_by = self._get_stiffness(
+                            equation_index, j) * pivot
+                        self._decrement_stiffness(k, j, decrement_by)
+                    self._set_stiffness(k, equation_index, -pivot * pivr)
+            self._set_stiffness(equation_index, equation_index, pivr)
+        return True
+
+    def _get_displacement(self, i: int, j: int):
+        return self.displacement[i - 1][j - 1]
+
+    def _set_displacement(self, i: int, j: int, x: float):
+        self.displacement[i - 1][j - 1] = x
+
+    def _set_member_force(self, i: int, j: int, x: float):
+        self.member_force[i - 1][j - 1] = x
+
+    def _compute_end_forces(self, load_instance_index: int):
+        for member in self._bridge.members:
+            xs = member.cross_section
+            ae_over_l = self._bridge.parameters.shapes[xs.section][xs.size].area * \
+                xs.material.E / member.length
+            j1 = member.start_joint.number
+            j2 = member.end_joint.number
+            end_force = ae_over_l * \
+                ((member.cos_x * (self._get_displacement((2 * j2 - 1), load_instance_index) - self._get_displacement((2 * j1 - 1), load_instance_index))
+                  ) + (member.cos_y * (self._get_displacement((2 * j2), load_instance_index) - self._get_displacement((2 * j1), load_instance_index))))
+            self._set_member_force(
+                member.number, load_instance_index, end_force)
+
+    def _compute_joint_displacements(self):
+        for load_instance_index in range(1, self._bridge.n_load_instances + 1):
+            for i in range(1, self.n_equations + 1):
+                temp = 0.0
+                for j in range(1, self.n_equations + 1):
+                    temp += self._get_stiffness(i, j) * \
+                        self._bridge.load_instances[load_instance_index][j]
+                self._set_displacement(i, load_instance_index, temp)
+
+            if self.test_print:
+                print("Joint displacements for Load Case", load_instance_index)
+                print("Jnt #     /\\X         /\\Y")
+                print("----- ----------- -----------")
+                for i in range(1, self._bridge.n_joints + 1):
+                    d1 = self._get_displacement(2 * i - 1, load_instance_index)
+                    d2 = self._get_displacement(2 * i, load_instance_index)
+                    print("%5d %11.5lf %11.5lf" % (i, d1, d2))
+
+            self._compute_end_forces(load_instance_index)
 
     def get_results(self) -> Tuple[bool, float]:
         self._apply_restraints()
         self._apply_initial_stiffness()
-        if self.test_print:
-            print("stiffness matrix:", self.stiffness)
+        self._apply_support_restraints()
+        valid = self._invert()
+        self._compute_joint_displacements()
+
         cost = 20000
-        return False, cost
+        return valid, cost

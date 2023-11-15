@@ -194,9 +194,9 @@ class Bridge():
     def _setup_load_instances(self):
         self.n_equations = self.n_joints * 2
         self.n_load_instances = self.load_scenario.n_loaded_joints + 1
-        self.load_instances = []
+        self.load_instances: List[List[float]] = []
         for _ in range(self.n_load_instances + 1):
-            point_load = []
+            point_load: List[float] = []
             for _ in range(self.n_equations + 1):
                 point_load.append(0.0)
             self.load_instances.append(point_load)
