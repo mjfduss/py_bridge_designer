@@ -79,7 +79,7 @@ class Bridge():
         joint = Joint(number=self.n_joints, x=x, y=y)
         self.joints.append(joint)
         self.joint_coords[coords] = joint
-        return True  # joint added
+        return True, BridgeError.BridgeNoError  # joint added
 
     def add_member(self,
                    start_x: int,
@@ -112,7 +112,8 @@ class Bridge():
                 return False, bridge_error
 
         if not (end_x, end_y) in self.joint_coords:
-            joint_accepted = self._add_joint(coords=(end_x, end_y))
+            joint_accepted, bridge_error = self._add_joint(
+                coords=(end_x, end_y))
             if not joint_accepted:
                 # member rejected because of joint
                 return False, bridge_error
@@ -142,7 +143,7 @@ class Bridge():
         self.member_coords[start_joint.number] = end_joint.number
         self.member_coords[end_joint.number] = start_joint.number
 
-        return True  # member added
+        return True, BridgeError.BridgeNoError  # member added
 
     # ===========================================
     # Observation Functions
