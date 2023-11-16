@@ -44,7 +44,7 @@ class Bridge():
     # Joints and Members Functions
     # ===========================================
 
-    def _add_joint(self, coords: Tuple[int, int]) -> bool:
+    def _add_joint(self, coords: Tuple[int, int]) -> Tuple[bool, BridgeError]:
         """Adds a joint to the Bridge. 
         If either the 'start' or 'end' joints are out of bounds, the joint will be rejected.
 
@@ -58,20 +58,21 @@ class Bridge():
 
         # Check if the bridge has reached the maximum amount of joints
         if self.n_joints == self.max_joints:
-            self.error = BridgeError.BridgeAtMaxJoints
-            return False  # joint rejected
+            # joint rejected
+            return False, BridgeError.BridgeAtMaxJoints
 
         # Check if joint coordinates are outside of bounds of the bridge's load scenario
         # check x
         if x > self.load_scenario.max_x or x < self.load_scenario.min_x:
             # Make sure x is not a cable anchor
             if self.load_scenario.cable_anchors_x is not None and x not in self.load_scenario.cable_anchors_x:
-                self.error = BridgeError.BridgeJointOutOfBounds
-                return False  # joint rejected
+                # joint rejected
+                return False, BridgeError.BridgeJointOutOfBounds
+
         # check y
         if y > self.max_y or y < self.min_y:
-            self.error = BridgeError.BridgeJointOutOfBounds
-            return False  # joint rejected
+            # joint rejected
+            return False, BridgeError.BridgeJointOutOfBounds
 
         # Add the joint
         self.n_joints += 1
@@ -87,7 +88,7 @@ class Bridge():
                    end_y: int,
                    material_index: int,
                    section_index: int,
-                   size: int) -> bool:
+                   size: int) -> Tuple[bool, BridgeError]:
         """Adds a member to the Bridge. 
         If either the 'start' or 'end' joints do not exist, it will add them.
 
@@ -104,13 +105,17 @@ class Bridge():
         """
         # Check if joints already exists
         if not (start_x, start_y) in self.joint_coords:
-            joint_accepted = self._add_joint(coords=(start_x, start_y))
+            joint_accepted, bridge_error = self._add_joint(
+                coords=(start_x, start_y))
             if not joint_accepted:
-                return False  # member rejected because of joint
+                # member rejected because of joint
+                return False, bridge_error
+
         if not (end_x, end_y) in self.joint_coords:
             joint_accepted = self._add_joint(coords=(end_x, end_y))
             if not joint_accepted:
-                return False  # member rejected because of joint
+                # member rejected because of joint
+                return False, bridge_error
 
         # Get joints
         start_joint: Joint = self.joint_coords[(start_x, start_y)]
