@@ -14,6 +14,10 @@ class BridgeError(Enum):
 
 class Bridge():
     def __init__(self, load_scenario_index=0):
+        """
+        Args:
+            load_scenario_index: int between 0 and 391
+        """
         self.error = BridgeError.BridgeNoError
         self.load_scenario = LoadScenario(load_scenario_index)
 
@@ -88,7 +92,7 @@ class Bridge():
                    end_y: int,
                    material_index: int,
                    section_index: int,
-                   size: int) -> Tuple[bool, BridgeError]:
+                   size: int) -> BridgeError:
         """Adds a member to the Bridge. 
         If either the 'start' or 'end' joints do not exist, it will add them.
 
@@ -109,14 +113,14 @@ class Bridge():
                 coords=(start_x, start_y))
             if not joint_accepted:
                 # member rejected because of joint
-                return False, bridge_error
+                return bridge_error
 
         if not (end_x, end_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
                 coords=(end_x, end_y))
             if not joint_accepted:
                 # member rejected because of joint
-                return False, bridge_error
+                return bridge_error
 
         # Get joints
         start_joint: Joint = self.joint_coords[(start_x, start_y)]
@@ -143,7 +147,7 @@ class Bridge():
         self.member_coords[start_joint.number] = end_joint.number
         self.member_coords[end_joint.number] = start_joint.number
 
-        return True, BridgeError.BridgeNoError  # member added
+        return BridgeError.BridgeNoError  # member added
 
     # ===========================================
     # Observation Functions
