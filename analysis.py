@@ -1,7 +1,9 @@
 from __future__ import annotations
 from enum import Enum
-from typing import TYPE_CHECKING, Tuple
+from math import sqrt
+from typing import TYPE_CHECKING, List, Tuple
 from py_bridge_designer.scenario import ARCH_SUPPORT, CABLE_SUPPORT_LEFT, CABLE_SUPPORT_BOTH, INTERMEDIATE_SUPPORT, HIGH_PIER
+from py_bridge_designer.cost import calculate_cost
 
 
 if TYPE_CHECKING:
@@ -73,6 +75,18 @@ class Analysis():
         self.member_force = [
             [0.0 for _ in range(self._bridge.n_load_instances)] for _ in range(self._bridge.n_members)
         ]
+
+        # Initialize member_strength vector
+        self.member_strength: List[MemberStrength] = [
+            MemberStrength(0.0, 0.0, FailMode.FailModeNone, FailMode.FailModeNone) for _ in range(self._bridge.n_members + 1)
+        ]
+
+        # Initialize max_forces vector
+        self.max_forces: List[MaxForces] = [
+            MaxForces(0.0, 0.0) for _ in range(self._bridge.n_members + 1)]
+
+        self.n_compressive_failures = 0
+        self.n_tensile_failures = 0
 
     def _apply_restraints(self):
         n_loaded_joints = self._bridge.load_scenario.n_loaded_joints
@@ -229,6 +243,9 @@ class Analysis():
     def _set_displacement(self, i: int, j: int, x: float):
         self.displacement[i - 1][j - 1] = x
 
+    def _get_member_force(self, i: int, j: int):
+        return self.member_force[i - 1][j - 1]
+
     def _set_member_force(self, i: int, j: int, x: float):
         self.member_force[i - 1][j - 1] = x
 
@@ -265,12 +282,86 @@ class Analysis():
 
             self._compute_end_forces(load_instance_index)
 
+    def _compute_member_strengths(self):
+        for member in self._bridge.members:
+            xs = member.cross_section
+            compressive_fail_mode = FailMode.FailModeNone
+            compressive = 0.0
+            tensile_fail_mode = FailMode.FailModeNone
+            tensile = 0.0
+            Fy = xs.material.Fy
+            params = self._bridge.parameters
+            area = params.shapes[xs.section][xs.size].area
+            moment = params.shapes[xs.section][xs.size].moment
+            radius_of_gyration = sqrt(moment / area) if area > 0 else 0
+            slenderness = member.length / radius_of_gyration if radius_of_gyration > 0 else 0
+            support_type = self._bridge.load_scenario.support_type
+
+            # if the bridge has cable support joints or else slenderness is not excessive
+            if support_type == CABLE_SUPPORT_LEFT or support_type == CABLE_SUPPORT_BOTH or slenderness < params.slenderness_limit:
+                # Calculate lambda point
+                lam = _square(member.length) * Fy * area / \
+                    (9.8696044 * xs.material.E * moment)
+                if lam <= 2.25:
+                    compressive_fail_mode = FailMode.FailModeYields
+                    compressive = params.compression_resistance_factor * \
+                        pow(0.66, lam) * Fy * area
+                else:
+                    compressive_fail_mode = FailMode.FailModeBuckles
+                    compressive = params.compression_resistance_factor * 0.88 * Fy * area / lam
+
+                tensile_fail_mode = FailMode.FailModeYields
+                tensile = params.tension_resistance_factor * Fy * area
+            else:
+                compressive_fail_mode = FailMode.FailModeSlenderness
+                tensile_fail_mode = FailMode.FailModeSlenderness
+                compressive = 0.0
+                tensile = 0.0
+
+            # Append stats to member strength vector
+            self.member_strength[member.number] = MemberStrength(
+                compressive, tensile, compressive_fail_mode, tensile_fail_mode)
+
+    def _summarize_results(self):
+        for member in self._bridge.members:
+            max_compression = 0.0
+            max_tension = 0.0
+            for load_instance_index in range(1, self._bridge.n_load_instances + 1):
+                member_force = self._get_member_force(
+                    member.number, load_instance_index)
+                if member_force < 0:
+                    max_compression = _fold_max(max_compression, -member_force)
+                else:
+                    max_tension = _fold_max(max_tension, member_force)
+            self.max_forces[member.number] = MaxForces(
+                max_compression, max_tension)
+
+            ms = self.member_strength[member.number]
+
+            if ms.compressive_fail_mode != FailMode.FailModeSlenderness and max_compression < ms.compressive:
+                self.member_strength[member.number].compressive_fail_mode = FailMode.FailModeNone
+            else:
+                self.n_compressive_failures += 1
+
+            if ms.tensile_fail_mode != FailMode.FailModeSlenderness and max_tension < ms.tensile:
+                self.member_strength[member.number].tensile_fail_mode = FailMode.FailModeNone
+            else:
+                self.n_tensile_failures += 1
+
     def get_results(self) -> Tuple[bool, float]:
+        cost = calculate_cost(self._bridge)
         self._apply_restraints()
         self._apply_initial_stiffness()
         self._apply_support_restraints()
         valid = self._invert()
-        self._compute_joint_displacements()
+        if not valid:
+            return False, cost
 
-        cost = 20000
-        return valid, cost
+        self._compute_joint_displacements()
+        self._compute_member_strengths()
+        self._summarize_results()
+
+        if self.error != AnalysisError.NoAnalysisError or self.n_compressive_failures > 0 or self.n_tensile_failures > 0:
+            return False, cost
+
+        return True, cost

@@ -24,6 +24,10 @@ class CrossSection():
         self.section = section  # either 0 for Bar or 1 for Tube
         self.size = size  # Between 0 and 32
 
+    def is_equal(self, c) -> bool:
+        return self.material.short_name == c.material.short_name \
+            and self.section == c.section and self.size == c.size
+
 
 class Member():
     def __init__(self,
