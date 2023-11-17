@@ -1,5 +1,5 @@
 from math import sqrt
-from parameters import Params
+from py_bridge_designer.parameters import Params
 
 
 def _world_coords(grid, grid_size):

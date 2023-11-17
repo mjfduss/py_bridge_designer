@@ -3,7 +3,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from typing import Tuple
-from bridge import Bridge, BridgeError
+from py_bridge_designer.bridge import Bridge, BridgeError
 from stable_baselines3.common.env_checker import check_env
 
 
