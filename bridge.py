@@ -1,9 +1,9 @@
 from typing import List, Tuple
 from enum import IntEnum
-from py_bridge_designer.members import Joint, CrossSection, Member
-from py_bridge_designer.scenario import LoadScenario
-from py_bridge_designer.parameters import Params
-from py_bridge_designer.analysis import Analysis
+from members import Joint, CrossSection, Member
+from scenario import LoadScenario
+from parameters import Params
+from analysis import Analysis
 
 
 class BridgeError(IntEnum):

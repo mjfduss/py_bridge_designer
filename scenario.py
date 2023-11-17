@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 from enum import Enum
-from py_bridge_designer.scenario_descriptions import scenario_descriptions_table
-from py_bridge_designer.members import Joint
+from scenario_descriptions import scenario_descriptions_table
+from members import Joint
 
 CABLE_ANCHORAGE_X_OFFSET = 32
 ARCH_SUPPORT = 1

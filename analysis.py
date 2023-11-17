@@ -2,8 +2,8 @@ from __future__ import annotations
 from enum import Enum
 from math import sqrt
 from typing import TYPE_CHECKING, List, Tuple
-from py_bridge_designer.scenario import ARCH_SUPPORT, CABLE_SUPPORT_LEFT, CABLE_SUPPORT_BOTH, INTERMEDIATE_SUPPORT, HIGH_PIER
-from py_bridge_designer.cost import calculate_cost
+from scenario import ARCH_SUPPORT, CABLE_SUPPORT_LEFT, CABLE_SUPPORT_BOTH, INTERMEDIATE_SUPPORT, HIGH_PIER
+from cost import calculate_cost
 
 
 if TYPE_CHECKING:
