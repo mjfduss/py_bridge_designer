@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from py_bridge_designer.Members import CrossSection
 
 
-def calculate_cost(bridge: Bridge) -> float:
+def calculate_cost(bridge: Bridge) -> int:
     used: List[CrossSection] = []
     mtl_cost = 0.00
     for member in bridge.members:
@@ -27,5 +27,5 @@ def calculate_cost(bridge: Bridge) -> float:
     total_cost = 2 * (mtl_cost + connection_cost) + \
         product_cost + bridge.load_scenario.desc.site_cost
 
-    total_cost = round(total_cost, ndigits=2)
+    total_cost = round(total_cost)
     return total_cost

@@ -1,12 +1,12 @@
 from typing import List, Tuple
-from enum import Enum
+from enum import IntEnum
 from py_bridge_designer.members import Joint, CrossSection, Member
 from py_bridge_designer.scenario import LoadScenario
 from py_bridge_designer.parameters import Params
 from py_bridge_designer.analysis import Analysis
 
 
-class BridgeError(Enum):
+class BridgeError(IntEnum):
     BridgeNoError = 0
     BridgeAtMaxJoints = 1
     BridgeJointOutOfBounds = 2
@@ -43,6 +43,8 @@ class Bridge():
         self.max_section_types = 2
         self.max_section_size = 33
         self.n_load_instances = 0
+        self.pad_x_action = 0
+        self.pad_y_action = 0
 
     # ===========================================
     # Joints and Members Functions
@@ -85,6 +87,24 @@ class Bridge():
         self.joint_coords[coords] = joint
         return True, BridgeError.BridgeNoError  # joint added
 
+    def get_size_of_add_member_parameters(self) -> List[int]:
+        max_x_action = self.load_scenario.max_x + 1
+        max_y_action = self.max_y + 1
+        min_x_action = self.load_scenario.min_x
+        min_y_action_value = self.min_y
+        if min_x_action < 0:
+            self.pad_x_action = abs(min_x_action)
+        if min_y_action_value < 0:
+            self.pad_y_action = abs(min_y_action_value)
+
+        max_x_action += self.pad_x_action
+        max_y_action += self.pad_y_action
+
+        size = [max_x_action, max_y_action, max_x_action, max_y_action, self.max_material_types,
+                self.max_section_types, self.max_section_size]
+
+        return size
+
     def add_member(self,
                    start_x: int,
                    start_y: int,
@@ -107,6 +127,13 @@ class Bridge():
         Returns:
             bool True if member added, False if member was rejected
         """
+        # Apply the padding, as real bridge coordinates may take negative values
+        # but Env Action is 0 or greater
+        start_x -= self.pad_x_action
+        start_y -= self.pad_y_action
+        end_x -= self.pad_x_action
+        end_y -= self.pad_y_action
+
         # Check if joints already exists
         if not (start_x, start_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
