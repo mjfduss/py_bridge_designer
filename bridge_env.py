@@ -37,8 +37,11 @@ class BridgeEnv(gym.Env):
             nvec=action_size, dtype=np.int16)
 
         # Define observation space
-        self.observation_space = spaces.MultiBinary(
-            n=[2, self.bridge.matrix_y, self.bridge.matrix_x])
+        self.observation_space = spaces.Box(
+            low=0,
+            high=1,
+            shape=[2, self.bridge.matrix_y, self.bridge.matrix_x],
+            dtype=np.int8)
 
     def _rand_load_scenario_index(self) -> int:
         return int(self.np_random.uniform(low=0, high=392))
@@ -97,8 +100,11 @@ class BridgeEnv(gym.Env):
             nvec=action_size, dtype=np.int16, seed=seed)
 
         # Define observation space
-        self.observation_space = spaces.MultiBinary(
-            n=[2, self.bridge.matrix_y, self.bridge.matrix_x],
+        self.observation_space = spaces.Box(
+            low=0,
+            high=1,
+            shape=[2, self.bridge.matrix_y, self.bridge.matrix_x],
+            dtype=np.int8,
             seed=seed)
 
         # Return the observation and info
