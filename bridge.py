@@ -292,7 +292,7 @@ class Bridge():
                     print("%5d %11.5f %11.5f" % (
                         joint.number, point_load[2 * joint.number - 1], point_load[2 * joint.number]))
 
-    def analyze(self, test_print=False) -> Tuple[bool, float]:
+    def analyze(self, test_print=False) -> Tuple[bool, int]:
         self._apply_loads(test_print)
         analysis = Analysis(bridge=self, test_print=test_print)
         valid, cost = analysis.get_results()

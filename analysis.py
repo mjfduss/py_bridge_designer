@@ -348,7 +348,7 @@ class Analysis():
             else:
                 self.n_tensile_failures += 1
 
-    def get_results(self) -> Tuple[bool, float]:
+    def get_results(self) -> Tuple[bool, int]:
         cost = calculate_cost(self._bridge)
         self._apply_restraints()
         self._apply_initial_stiffness()

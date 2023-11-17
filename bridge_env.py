@@ -46,7 +46,7 @@ class BridgeEnv(gym.Env):
     def _calculate_reward(self,
                           bridge_valid: bool,
                           bridge_error: BridgeError,
-                          bridge_cost: float) -> Tuple[int, bool]:
+                          bridge_cost: int) -> Tuple[int, bool]:
         if bridge_valid:
             terminated = True
             return -bridge_cost, terminated
