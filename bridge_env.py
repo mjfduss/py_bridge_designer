@@ -4,31 +4,26 @@ import numpy as np
 from gymnasium import spaces
 from typing import Tuple
 from py_bridge_designer.bridge import Bridge, BridgeError
-from stable_baselines3.common.env_checker import check_env
 
+import cv2
 
 class BridgeEnv(gym.Env):
     metadata = {"render_modes": ["rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, options={"load_scenario_index": None, "test_print": False}):
+    def __init__(self, render_mode=None, load_scenario_index=None, test_print=False):
         self.reward_range = (-np.inf, 0)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
+        self.test_print = False
 
         # Select a random load_scenario_index if needed
-        if options is not None and options["load_scenario_index"] is None:
-            options["load_scenario_index"] = int(
-                np.random.uniform(low=0, high=392))
+        if load_scenario_index is None:
+            self.load_scenario_index: int = int(np.random.uniform(low=0, high=392))
         else:
-            options = {
-                "load_scenario_index": int(
-                    np.random.uniform(low=0, high=392)),
-                "test_print": False
-            }
-        self.options = options
-
+            self.load_scenario_index = load_scenario_index
+        
         # Init the bridge
-        self.bridge = Bridge(self.options["load_scenario_index"])
+        self.bridge = Bridge(self.load_scenario_index)
 
         # Define action space
         action_size = self.bridge.get_size_of_add_member_parameters()
@@ -60,6 +55,9 @@ class BridgeEnv(gym.Env):
                 return -bridge_cost * penalty, terminated
             elif bridge_error == BridgeError.BridgeJointOutOfBounds:
                 terminated = False
+                return -4, terminated
+            elif bridge_error == BridgeError.BridgeJointNotConnected:
+                terminated = False
                 return -2, terminated
             else:
                 terminated = False
@@ -77,21 +75,17 @@ class BridgeEnv(gym.Env):
             "current_error": current_error
         }
 
-    def reset(self, seed=None, options={"load_scenario_index": None, "test_print": False}):
+    def reset(self, seed=None, load_scenario_index=None):
         super().reset(seed=seed)
 
         # Select a random load_scenario_index if needed
-        if options is not None and options["load_scenario_index"] is None:
-            options["load_scenario_index"] = self._rand_load_scenario_index()
+        if load_scenario_index is None:
+            self.load_scenario_index = self._rand_load_scenario_index()
         else:
-            options = {
-                "load_scenario_index": self._rand_load_scenario_index(),
-                "test_print": False
-            }
-        self.options = options
+            self.load_scenario_index = load_scenario_index
 
         # Init the bridge
-        self.bridge = Bridge(self.options["load_scenario_index"])
+        self.bridge = Bridge(self.load_scenario_index)
 
         # Define action space
         action_size = self.bridge.get_size_of_add_member_parameters()
@@ -117,9 +111,9 @@ class BridgeEnv(gym.Env):
         bridge_error = self.bridge.add_member(
             action[0], action[1], action[2], action[3], action[4], action[5], action[6])
 
-        bridge_valid, bridge_cost = self.bridge.analyze(
-            self.options["test_print"])
-
+        bridge_valid, bridge_cost = self.bridge.analyze(self.test_print)
+        print("bridge valid:", bridge_valid)
+        print(f"bridge cost {bridge_cost}")
         reward, terminated = self._calculate_reward(
             bridge_valid, bridge_error, bridge_cost)
 
@@ -127,16 +121,41 @@ class BridgeEnv(gym.Env):
         info = self._get_info(current_error=bridge_error)
 
         return observation, reward, terminated, False, info
+    
+    def render(self):
+        return self.bridge.get_image()
 
 
 # Testing code
-env = BridgeEnv()
-check_env(env)
-"""
-EPISODES = 10
+env = BridgeEnv(test_print=True)
+#check_env(env)
+valid_actions = [
+    [0, 0, 8, 16, 0, 0, 18],
+    [0, 0, 16, 0, 0, 0, 18],
+    [16, 0, 8, 16, 0, 0, 18],
+    [16, 0, 24, 16, 0, 0, 18],
+    [32, 0, 24, 16, 0, 0, 18],
+    [16, 0, 32, 0, 0, 0, 18],
+    [32, 0, 48, 0, 0, 0, 18],
+    [32, 0, 40, 16, 0, 0, 18],
+    [48, 0, 40, 16, 0, 0, 18],
+    [48, 0, 64, 0, 0, 0, 18],
+    [48, 0, 56, 16, 0, 0, 18],
+    [64, 0, 56, 16, 0, 0, 18],
+    [64, 0, 80, 0, 0, 0, 18],
+    [64, 0, 72, 16, 0, 0, 18],
+    [80, 0, 72, 16, 0, 0, 18],
+    [56, 16, 72, 16, 0, 0, 18],
+    [56, 16, 40, 16, 0, 0, 18],
+    [24, 16, 40, 16, 0, 0, 18],
+    [24, 16, 8, 16, 0, 0, 18]
+]
+
+EPISODES = 1
 step_counts = []
 for e in range(EPISODES):
-    obs = env.reset()
+    obs = env.reset(load_scenario_index=6)
+    print("Load Scenario:", env.bridge.load_scenario.desc.index)
     done = False
     step_count = 0
     rewards = []
@@ -146,18 +165,19 @@ for e in range(EPISODES):
     print(f"Episode {e+1}")
     print("=====================================")
     while not done:
-        action = env.action_space.sample()  # would pass obs to real network
+        action = valid_actions[step_count] if step_count < len(valid_actions) else env.action_space.sample()  # would pass obs to real network
         obs, reward, terminated, _, info = env.step(action)
         rewards.append(reward)
-        if step_count % 10 == 0:
+        if step_count % 1 == 0:
             print(f"Step: {step_count}; Action: {action}")
-            print(f"Reward: {reward}; Error: {info['current_error']}")
+            print(f"Reward: {reward}; Error: {info['current_error']}; Terminated: {terminated}")
         if terminated:
             terminal_reward = reward
             terminal_error = info['current_error']
             done = True
         else:
             step_count += 1
+        
     print(f"~~~~~~~~ Episode {e+1} done ~~~~~~~~")
     print(f"~~~~~~~~ Step Total: {step_count+1}")
     print(f"~~~~~~~~ Mean Step Rewards: {statistics.mean(rewards[:-1])}")
@@ -167,7 +187,17 @@ for e in range(EPISODES):
     step_counts.append(step_count)
 print(f"Mean Steps: {statistics.mean(step_counts)}")
 """
-"""
+cv2.imshow("Bridge Env Image", env.render())
+cv2.waitKey(0)  # Wait for a keypress
+cv2.destroyAllWindows()
+for a in valid_actions:
+    env.step(a)
+
+valid, cost = env.bridge.analyze(test_print=False)
+print("bridge valid:", valid)
+print(f"bridge cost {cost}")
+env.bridge.get_image()
+
 # load_scenario_index=6
 # lower deck joints     [(0, 0), (16, 0), (32, 0), (48, 0), (64, 0), (80, 0)])
 # guess at upper joints [(8, 16), (24, 16), (40, 16), (56, 16), (72, 16)]
@@ -205,8 +235,7 @@ for a in valid_actions:
 valid, cost = env.bridge.analyze(test_print=False)
 print("bridge valid:", valid)
 print(f"bridge cost {cost}")
-"""
-"""
+
 print("action space shape", env.action_space.shape)
 print("action space sample", )
 print("action space sample", env.action_space.sample())

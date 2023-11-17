@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from py_bridge_designer.bridge import Bridge
-    from py_bridge_designer.Members import CrossSection
+    from py_bridge_designer.members import CrossSection
 
 
 def calculate_cost(bridge: Bridge) -> int:

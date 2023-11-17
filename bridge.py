@@ -4,12 +4,14 @@ from py_bridge_designer.members import Joint, CrossSection, Member
 from py_bridge_designer.scenario import LoadScenario
 from py_bridge_designer.parameters import Params
 from py_bridge_designer.analysis import Analysis
+from py_bridge_designer.draw import draw_bridge
 
 
 class BridgeError(IntEnum):
     BridgeNoError = 0
     BridgeAtMaxJoints = 1
-    BridgeJointOutOfBounds = 2
+    BridgeJointNotConnected = 2
+    BridgeJointOutOfBounds = 4
 
 
 class Bridge():
@@ -36,9 +38,9 @@ class Bridge():
         self.member_coords = dict()
         self.max_y = 32
         self.min_y = -96
-        self.matrix_x = 242
-        self.matrix_y = 130
-        self.max_joints = 130  # it is best if max joints and maxtrix_y are the same value
+        self.matrix_x = 256
+        self.matrix_y = 256
+        self.max_joints = 256  # it is best if max joints and maxtrix_y are the same value
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
@@ -85,7 +87,7 @@ class Bridge():
         joint = Joint(number=self.n_joints, x=x, y=y)
         self.joints.append(joint)
         self.joint_coords[coords] = joint
-        return True, BridgeError.BridgeNoError  # joint added
+        return True, BridgeError.BridgeJointNotConnected  # joint added
 
     def get_size_of_add_member_parameters(self) -> List[int]:
         max_x_action = self.load_scenario.max_x + 1
@@ -133,7 +135,10 @@ class Bridge():
         start_y -= self.pad_y_action
         end_x -= self.pad_x_action
         end_y -= self.pad_y_action
-
+        
+        # Set initial bridge_error:
+        bridge_error = BridgeError.BridgeNoError
+        
         # Check if joints already exists
         if not (start_x, start_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
@@ -174,7 +179,7 @@ class Bridge():
         self.member_coords[start_joint.number] = end_joint.number
         self.member_coords[end_joint.number] = start_joint.number
 
-        return BridgeError.BridgeNoError  # member added
+        return bridge_error
 
     # ===========================================
     # Observation Functions
@@ -294,6 +299,9 @@ class Bridge():
 
     def analyze(self, test_print=False) -> Tuple[bool, int]:
         self._apply_loads(test_print)
-        analysis = Analysis(bridge=self, test_print=test_print)
-        valid, cost = analysis.get_results()
+        self.analysis = Analysis(bridge=self, test_print=test_print)
+        valid, cost = self.analysis.get_results()
         return valid, cost
+
+    def get_image(self):
+        return draw_bridge(self)
