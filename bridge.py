@@ -99,8 +99,8 @@ class Bridge():
         if min_y_action_value < 0:
             self.pad_y_action = abs(min_y_action_value)
 
-        #max_x_action += self.pad_x_action
-        #max_y_action += self.pad_y_action
+        max_x_action += self.pad_x_action
+        max_y_action += self.pad_y_action
 
         size = [max_x_action, max_y_action, max_x_action, max_y_action, self.max_material_types,
                 self.max_section_types, self.max_section_size]
@@ -131,12 +131,12 @@ class Bridge():
         """
         # Apply the padding, as real bridge coordinates may take negative values
         # but Env Action is 0 or greater
-        """
+
         start_x -= self.pad_x_action
         start_y -= self.pad_y_action
         end_x -= self.pad_x_action
         end_y -= self.pad_y_action
-        """
+
         
         # Set initial bridge_error:
         bridge_error = BridgeError.BridgeNoError

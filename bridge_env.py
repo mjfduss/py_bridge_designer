@@ -157,6 +157,11 @@ valid_actions = [
     [24, 16, 40, 16, 0, 0, 18],
     [24, 16, 8, 16, 0, 0, 18]
 ]
+for i in range(len(valid_actions)):
+    valid_actions[i][0] += env.bridge.pad_x_action
+    valid_actions[i][2] += env.bridge.pad_x_action
+    valid_actions[i][1] += env.bridge.pad_y_action
+    valid_actions[i][3] += env.bridge.pad_y_action
 
 EPISODES = 1
 step_counts = []
