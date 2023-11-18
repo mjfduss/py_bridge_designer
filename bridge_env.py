@@ -120,8 +120,6 @@ class BridgeEnv(gym.Env):
             action[0], action[1], action[2], action[3], action[4], action[5], action[6])
 
         bridge_valid, bridge_cost = self.bridge.analyze(self.test_print)
-        print("bridge valid:", bridge_valid)
-        print(f"bridge cost {bridge_cost}")
         reward, terminated = self._calculate_reward(bridge_valid, bridge_error, bridge_cost)
 
         observation = self._get_observation()
