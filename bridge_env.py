@@ -9,7 +9,7 @@ import cv2
 
 
 class BridgeEnv(gym.Env):
-    metadata = {"render_modes": ["rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["rgb_array"], "render_fps": 30}
 
     def __init__(self, render_mode=None, load_scenario_index=None, test_print=False):
         self.reward_range = (-np.inf, 0)
@@ -84,7 +84,7 @@ class BridgeEnv(gym.Env):
             "bridge_valid": bridge_valid
         }
 
-    def reset(self, seed=None, load_scenario_index=None):
+    def reset(self, seed=None, load_scenario_index=None, options=None):
         super().reset(seed=seed)
 
         # Select a random load_scenario_index if needed
@@ -129,7 +129,8 @@ class BridgeEnv(gym.Env):
         return observation, reward, terminated, False, info
 
     def render(self):
-        return self.bridge.get_image()
+        if self.render_mode == "rgb_array":
+            return self.bridge.get_image()
 
 """
 # Testing code
