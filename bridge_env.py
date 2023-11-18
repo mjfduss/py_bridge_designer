@@ -132,7 +132,7 @@ class BridgeEnv(gym.Env):
     def render(self):
         return self.bridge.get_image()
 
-
+"""
 # Testing code
 env = BridgeEnv()
 # check_env(env)
@@ -198,6 +198,7 @@ for e in range(EPISODES):
     print(f"~~~~~~~~ Terminal Error: {terminal_error}")
     step_counts.append(step_count)
 print(f"Mean Steps: {statistics.mean(step_counts)}")
+"""
 """
 cv2.imshow("Bridge Env Image", env.render())
 cv2.waitKey(0)  # Wait for a keypress
