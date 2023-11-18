@@ -7,6 +7,7 @@ from py_bridge_designer.bridge import Bridge, BridgeError
 
 import cv2
 
+
 class BridgeEnv(gym.Env):
     metadata = {"render_modes": ["rgb_array"], "render_fps": 4}
 
@@ -14,14 +15,14 @@ class BridgeEnv(gym.Env):
         self.reward_range = (-np.inf, 0)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
-        self.test_print = False
+        self.test_print = test_print
 
         # Select a random load_scenario_index if needed
         if load_scenario_index is None:
             self.load_scenario_index: int = int(np.random.uniform(low=0, high=392))
         else:
             self.load_scenario_index = load_scenario_index
-        
+
         # Init the bridge
         self.bridge = Bridge(self.load_scenario_index)
 
@@ -41,27 +42,33 @@ class BridgeEnv(gym.Env):
     def _rand_load_scenario_index(self) -> int:
         return int(self.np_random.uniform(low=0, high=392))
 
-    def _calculate_reward(self,
-                          bridge_valid: bool,
+    @staticmethod
+    def _calculate_reward(bridge_valid: bool,
                           bridge_error: BridgeError,
                           bridge_cost: int) -> Tuple[int, bool]:
-        if bridge_valid:
-            terminated = True
-            return -bridge_cost, terminated
-        else:
-            if bridge_error == BridgeError.BridgeAtMaxJoints:
-                terminated = True
-                penalty = 100
-                return -bridge_cost * penalty, terminated
-            elif bridge_error == BridgeError.BridgeJointOutOfBounds:
-                terminated = False
-                return -4, terminated
-            elif bridge_error == BridgeError.BridgeJointNotConnected:
-                terminated = False
-                return -2, terminated
+
+        if bridge_error == BridgeError.BridgeNoError:
+            if bridge_valid:
+                complete = True
+                return -bridge_cost, complete
             else:
-                terminated = False
-                return -1, terminated
+                complete = False
+                return -1, complete
+        elif bridge_error == BridgeError.BridgeAtMaxJoints:
+            complete = True
+            penalty = 100
+            return -bridge_cost * penalty, complete
+        elif bridge_error == BridgeError.BridgeJointOutOfBounds:
+            complete = False
+            return -4, complete
+        elif bridge_error == BridgeError.BridgeJointNotConnected:
+            complete = False
+            return -2, complete
+        else:
+            complete = True
+            print("Error! Unknown BridgeError type in _calculate_reward")
+            penalty = 100
+            return -bridge_cost * penalty, complete
 
     def _get_observation(self):
         """This should not be called before reset()"""
@@ -114,21 +121,20 @@ class BridgeEnv(gym.Env):
         bridge_valid, bridge_cost = self.bridge.analyze(self.test_print)
         print("bridge valid:", bridge_valid)
         print(f"bridge cost {bridge_cost}")
-        reward, terminated = self._calculate_reward(
-            bridge_valid, bridge_error, bridge_cost)
+        reward, terminated = self._calculate_reward(bridge_valid, bridge_error, bridge_cost)
 
         observation = self._get_observation()
         info = self._get_info(current_error=bridge_error)
 
         return observation, reward, terminated, False, info
-    
+
     def render(self):
         return self.bridge.get_image()
 
 
 # Testing code
-env = BridgeEnv(test_print=True)
-#check_env(env)
+env = BridgeEnv()
+# check_env(env)
 valid_actions = [
     [0, 0, 8, 16, 0, 0, 18],
     [0, 0, 16, 0, 0, 0, 18],
@@ -162,10 +168,11 @@ for e in range(EPISODES):
     terminal_reward = 0
     terminal_error = 0
     print("=====================================")
-    print(f"Episode {e+1}")
+    print(f"Episode {e + 1}")
     print("=====================================")
     while not done:
-        action = valid_actions[step_count] if step_count < len(valid_actions) else env.action_space.sample()  # would pass obs to real network
+        action = valid_actions[step_count] if step_count < len(
+            valid_actions) else env.action_space.sample()  # would pass obs to real network
         obs, reward, terminated, _, info = env.step(action)
         rewards.append(reward)
         if step_count % 1 == 0:
@@ -177,9 +184,9 @@ for e in range(EPISODES):
             done = True
         else:
             step_count += 1
-        
-    print(f"~~~~~~~~ Episode {e+1} done ~~~~~~~~")
-    print(f"~~~~~~~~ Step Total: {step_count+1}")
+
+    print(f"~~~~~~~~ Episode {e + 1} done ~~~~~~~~")
+    print(f"~~~~~~~~ Step Total: {step_count + 1}")
     print(f"~~~~~~~~ Mean Step Rewards: {statistics.mean(rewards[:-1])}")
     print(f"~~~~~~~~ Terminal Reward: {terminal_reward}")
     print(f"~~~~~~~~ Total Rewards: {sum(rewards)}")
