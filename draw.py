@@ -7,10 +7,9 @@ from py_bridge_designer.analysis import FailMode
 
 if TYPE_CHECKING:
     from py_bridge_designer.bridge import Bridge
-    
 
 # Number of bridge designer grids to use as a margin around the image edge.
-SKETCH_MARGIN = 1
+SKETCH_MARGIN = 10
 
 # Number of pixels in a single bridge designer grid.
 SKETCH_GRID_SIZE = 16
@@ -20,28 +19,26 @@ MAX_TENSION_R, MAX_TENSION_G, MAX_TENSION_B = 0, 0, 255
 MAX_COMPRESSION_R, MAX_COMPRESSION_G, MAX_COMPRESSION_B = 255, 0, 0
 
 
-def _set_tension_color(intensity: float) -> Tuple[int, int, int]:
+def _set_intensity(intensity: float) -> float:
     if intensity < 0:
-        intensity = 0.0
+        return 0.0
     elif intensity > 1:
-        intensity = 1.0
-
-    r = int(MAX_TENSION_R * intensity + MAX_NOFORCE_R * (1.0 - intensity))
-    g = int(MAX_TENSION_G * intensity + MAX_NOFORCE_G * (1.0 - intensity))
-    b = int(MAX_TENSION_B * intensity + MAX_NOFORCE_B * (1.0 - intensity))
-
-    return r, g, b
+        return 1.0
+    else:
+        return intensity
 
 
-def _set_compression_color(intensity: float) -> Tuple[int, int, int]:
-    if intensity < 0:
-        intensity = 0.0
-    elif intensity > 1:
-        intensity = 1.0
+def _set_color(intensity: float, max_type: str) -> Tuple[int, int, int]:
+    _intensity = _set_intensity(intensity)
 
-    r = int(MAX_COMPRESSION_R * intensity + MAX_NOFORCE_R * (1.0 - intensity))
-    g = int(MAX_COMPRESSION_G * intensity + MAX_NOFORCE_G * (1.0 - intensity))
-    b = int(MAX_COMPRESSION_B * intensity + MAX_NOFORCE_B * (1.0 - intensity))
+    if max_type == 'tension':
+        max_r, max_g, max_b = MAX_TENSION_R, MAX_TENSION_G, MAX_TENSION_B
+    else:
+        max_r, max_g, max_b = MAX_COMPRESSION_R, MAX_COMPRESSION_G, MAX_COMPRESSION_B
+
+    r = int(max_r * _intensity + MAX_NOFORCE_R * (1.0 - _intensity))
+    g = int(max_g * _intensity + MAX_NOFORCE_G * (1.0 - _intensity))
+    b = int(max_b * _intensity + MAX_NOFORCE_B * (1.0 - _intensity))
 
     return r, g, b
 
@@ -54,7 +51,7 @@ def _orient_y_pixel(y_org_pixel: int, grid_pixels: float, under_grids: int, posi
     return y_org_pixel + int((position + under_grids) * grid_pixels)
 
 
-def draw_bridge(bridge: Bridge, width=650, height=500, line_thickness=2):
+def draw_bridge(bridge: Bridge, width=850, height=700, line_thickness=2):
     """
     Returns:
         NDArray[unint8] with size (height, width, 3)
@@ -63,8 +60,7 @@ def draw_bridge(bridge: Bridge, width=650, height=500, line_thickness=2):
 
     # Setup the variables
     bridge_width_grids = bridge.load_scenario.num_length_grids
-    bridge_height_grids = bridge.load_scenario.over_grids + \
-        bridge.load_scenario.under_grids
+    bridge_height_grids = bridge.load_scenario.over_grids + bridge.load_scenario.under_grids
 
     bridge_left_anchor_margin = CABLE_ANCHORAGE_X_OFFSET if bridge.load_scenario.support_type == CABLE_SUPPORT_LEFT else 0
     bridge_right_anchor_margin = CABLE_ANCHORAGE_X_OFFSET if bridge.load_scenario.support_type == CABLE_SUPPORT_BOTH else 0
@@ -76,61 +72,62 @@ def draw_bridge(bridge: Bridge, width=650, height=500, line_thickness=2):
     grid_pixels = min(x_pixels, y_pixels)
 
     x_org_pixel = int((width - (bridge_width_grids - bridge_left_anchor_margin +
-                      bridge_right_anchor_margin) * grid_pixels) / 2.0)
+                                bridge_right_anchor_margin) * grid_pixels) / 2.0)
     y_org_pixel = int((height - bridge_height_grids * grid_pixels) / 2.0)
 
-    def sketch_x(x: float): return _orient_x_pixel(x_org_pixel, grid_pixels, x)
+    def sketch_x(x: float):
+        return _orient_x_pixel(x_org_pixel, grid_pixels, x)
 
-    def sketch_y(y: float): return _orient_y_pixel(
-        y_org_pixel, grid_pixels, bridge.load_scenario.under_grids, y)
-    
+    def sketch_y(y: float):
+        return _orient_y_pixel(
+            y_org_pixel, grid_pixels, bridge.load_scenario.under_grids, y)
+
     # Draw the build area
     cv2.rectangle(
         image,
         pt1=(sketch_x(0), sketch_y(-bridge.load_scenario.under_grids)),
         pt2=(sketch_x(bridge.load_scenario.num_length_grids),
-                   sketch_y(bridge.load_scenario.over_grids)),
-        color=(255, 255, 255),
-        thickness=line_thickness)
-    
-    
+             sketch_y(bridge.load_scenario.over_grids)),
+        color=(127, 127, 127),
+        thickness=line_thickness // 2)
+
     for member in bridge.members:
         j1 = member.start_joint
         j2 = member.end_joint
-        r,g,b = 255,255,255
-        
+        r, g, b = 255, 255, 255
+
         if bridge.analysis is not None:
             if bridge.analysis.member_strength[member.number].compressive_fail_mode == FailMode.FailModeSlenderness:
-                r,g,b = 255,0,255
+                r, g, b = 255, 0, 255
             else:
                 compressive = bridge.analysis.member_strength[member.number].compressive
-                compression_intensity = bridge.analysis.max_forces[member.number].compression / compressive if compressive > 0 else 0
-                
+                compression_intensity = bridge.analysis.max_forces[
+                                            member.number].compression / compressive if compressive > 0 else 0
+
                 tensile = bridge.analysis.member_strength[member.number].tensile
-                tension_intensity  = bridge.analysis.max_forces[member.number].tension / tensile if tensile > 0 else 0
-                
-                if compression_intensity > tension_intensity :
-                    r,g,b = _set_compression_color(compression_intensity)
+                tension_intensity = bridge.analysis.max_forces[member.number].tension / tensile if tensile > 0 else 0
+
+                if compression_intensity > tension_intensity:
+                    r, g, b = _set_color(compression_intensity, 'compression')
                 else:
-                    r,g,b = _set_tension_color(tension_intensity)
+                    r, g, b = _set_color(tension_intensity, 'tension')
         # Draw joints
         cv2.circle(image,
                    center=(sketch_x(j1.x), sketch_y(j1.y)),
-                   radius=line_thickness + 5,
-                   color=(r,g,b))
+                   radius=line_thickness + 3,
+                   color=(r, g, b),
+                   thickness=line_thickness - 1)
         cv2.circle(image,
                    center=(sketch_x(j2.x), sketch_y(j2.y)),
-                   radius=line_thickness + 5,
-                   color=(r,g,b))
+                   radius=line_thickness + 3,
+                   color=(r, g, b),
+                   thickness=line_thickness - 1)
         # Draw member line
-        cv2.line(image, 
+        cv2.line(image,
                  pt1=(sketch_x(j1.x), sketch_y(j1.y)),
                  pt2=(sketch_x(j2.x), sketch_y(j2.y)),
-                 color=(r,g,b),
+                 color=(r, g, b),
                  thickness=line_thickness)
-    
-    return image
-                
-        
 
-    
+    image = cv2.rotate(image, rotateCode=cv2.ROTATE_180)
+    return image

@@ -1,5 +1,8 @@
 from typing import List, Tuple
 from enum import IntEnum
+
+import cv2
+
 from py_bridge_designer.members import Joint, CrossSection, Member
 from py_bridge_designer.scenario import LoadScenario
 from py_bridge_designer.parameters import Params

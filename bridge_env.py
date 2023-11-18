@@ -75,12 +75,13 @@ class BridgeEnv(gym.Env):
         """This should not be called before reset()"""
         return np.array(self.bridge.get_state(), dtype=np.int8)
 
-    def _get_info(self, current_error=BridgeError.BridgeNoError):
+    def _get_info(self, current_error=BridgeError.BridgeNoError, bridge_valid=False):
         """This should not be called before reset()"""
         return {
             "scenario_id": self.bridge.load_scenario.desc.id,
             "scenario_site_cost": self.bridge.load_scenario.desc.site_cost,
-            "current_error": current_error
+            "current_error": current_error,
+            "bridge_valid": bridge_valid
         }
 
     def reset(self, seed=None, load_scenario_index=None):
@@ -123,7 +124,7 @@ class BridgeEnv(gym.Env):
         reward, terminated = self._calculate_reward(bridge_valid, bridge_error, bridge_cost)
 
         observation = self._get_observation()
-        info = self._get_info(current_error=bridge_error)
+        info = self._get_info(current_error=bridge_error, bridge_valid=bridge_valid)
 
         return observation, reward, terminated, False, info
 
@@ -134,6 +135,7 @@ class BridgeEnv(gym.Env):
 # Testing code
 env = BridgeEnv()
 # check_env(env)
+
 valid_actions = [
     [0, 0, 8, 16, 0, 0, 18],
     [0, 0, 16, 0, 0, 0, 18],
@@ -155,35 +157,40 @@ valid_actions = [
     [24, 16, 40, 16, 0, 0, 18],
     [24, 16, 8, 16, 0, 0, 18]
 ]
+# Pad the actions like the Observation space
 for i in range(len(valid_actions)):
     valid_actions[i][0] += env.bridge.pad_x_action
     valid_actions[i][2] += env.bridge.pad_x_action
     valid_actions[i][1] += env.bridge.pad_y_action
     valid_actions[i][3] += env.bridge.pad_y_action
 
-EPISODES = 1
+EPISODES = 10
 step_counts = []
 for e in range(EPISODES):
-    obs = env.reset(load_scenario_index=6)
+    obs = env.reset() # load_scenario_index=6
     print("Load Scenario:", env.bridge.load_scenario.desc.index)
     done = False
     step_count = 0
     rewards = []
     terminal_reward = 0
     terminal_error = 0
+    terminal_bridge_valid = False
     print("=====================================")
     print(f"Episode {e + 1}")
     print("=====================================")
     while not done:
-        action = valid_actions[step_count] # if step_count < len(valid_actions) else env.action_space.sample()  # would pass obs to real network
+        action = env.action_space.sample() # valid_actions[step_count]  # would pass obs to real network
         obs, reward, terminated, _, info = env.step(action)
         rewards.append(reward)
+        cv2.imshow("Bridge Env Image", env.render())
+        cv2.waitKey(30)
         if step_count % 1 == 0:
             print(f"Step: {step_count}; Action: {action}")
             print(f"Reward: {reward}; Error: {info['current_error']}; Terminated: {terminated}")
-        if terminated or step_count == len(valid_actions) - 1:
+        if terminated: # or step_count == len(valid_actions) - 1:
             terminal_reward = reward
             terminal_error = info['current_error']
+            terminal_bridge_valid = info['bridge_valid']
             done = True
         else:
             step_count += 1
@@ -194,13 +201,14 @@ for e in range(EPISODES):
     print(f"~~~~~~~~ Terminal Reward: {terminal_reward}")
     print(f"~~~~~~~~ Total Rewards: {sum(rewards)}")
     print(f"~~~~~~~~ Terminal Error: {terminal_error}")
+    print(f"~~~~~~~~ Terminal Bridge Valid: {terminal_bridge_valid}")
     step_counts.append(step_count)
 print(f"Mean Steps: {statistics.mean(step_counts)}")
-"""
-"""
-cv2.imshow("Bridge Env Image", env.render())
-cv2.waitKey(0)  # Wait for a keypress
+cv2.waitKey(0)
 cv2.destroyAllWindows()
+"""
+"""
+
 for a in valid_actions:
     env.step(a)
 
