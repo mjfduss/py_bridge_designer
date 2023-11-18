@@ -19,7 +19,7 @@ class BridgeEnv(gym.Env):
 
         # Select a random load_scenario_index if needed
         if load_scenario_index is None:
-            self.load_scenario_index: int = int(np.random.uniform(low=0, high=392))
+            self.load_scenario_index = self._rand_load_scenario_index()
         else:
             self.load_scenario_index = load_scenario_index
 
@@ -40,7 +40,8 @@ class BridgeEnv(gym.Env):
             dtype=np.int8)
 
     def _rand_load_scenario_index(self) -> int:
-        return int(self.np_random.uniform(low=0, high=392))
+        #return int(self.np_random.uniform(low=0, high=392))
+        return int(np.random.uniform(low=0, high=392)) # trying without seeded rng
 
     @staticmethod
     def _calculate_reward(bridge_valid: bool,
@@ -135,6 +136,10 @@ class BridgeEnv(gym.Env):
 """
 # Testing code
 env = BridgeEnv()
+for i in range(10):
+    env.reset(seed=42)
+    print(f"Episode: {i+1}; Bridge Index: {env.bridge.load_scenario.desc.index}")
+
 # check_env(env)
 
 valid_actions = [
