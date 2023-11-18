@@ -45,19 +45,20 @@ class BridgeEnv(gym.Env):
     @staticmethod
     def _calculate_reward(bridge_valid: bool,
                           bridge_error: BridgeError,
-                          bridge_cost: int) -> Tuple[int, bool]:
+                          bridge_cost: int) -> Tuple[float, bool]:
 
+        _reward = round(-(bridge_cost * .0001), 4)
         if bridge_error == BridgeError.BridgeNoError:
             if bridge_valid:
                 complete = True
-                return -bridge_cost, complete
+                return _reward, complete
             else:
                 complete = False
                 return -1, complete
         elif bridge_error == BridgeError.BridgeAtMaxJoints:
             complete = True
-            penalty = 100
-            return -bridge_cost * penalty, complete
+            penalty = 10
+            return _reward * penalty, complete
         elif bridge_error == BridgeError.BridgeJointOutOfBounds:
             complete = False
             return -4, complete
@@ -67,7 +68,7 @@ class BridgeEnv(gym.Env):
         else:
             complete = True
             print("Error! Unknown BridgeError type in _calculate_reward")
-            penalty = 100
+            penalty = 10
             return -bridge_cost * penalty, complete
 
     def _get_observation(self):
@@ -171,14 +172,13 @@ for e in range(EPISODES):
     print(f"Episode {e + 1}")
     print("=====================================")
     while not done:
-        action = valid_actions[step_count] if step_count < len(
-            valid_actions) else env.action_space.sample()  # would pass obs to real network
+        action = valid_actions[step_count] # if step_count < len(valid_actions) else env.action_space.sample()  # would pass obs to real network
         obs, reward, terminated, _, info = env.step(action)
         rewards.append(reward)
         if step_count % 1 == 0:
             print(f"Step: {step_count}; Action: {action}")
             print(f"Reward: {reward}; Error: {info['current_error']}; Terminated: {terminated}")
-        if terminated:
+        if terminated or step_count == len(valid_actions) - 1:
             terminal_reward = reward
             terminal_error = info['current_error']
             done = True
