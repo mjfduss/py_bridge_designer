@@ -12,6 +12,7 @@ class BridgeError(IntEnum):
     BridgeAtMaxJoints = 1
     BridgeJointNotConnected = 2
     BridgeJointOutOfBounds = 4
+    BridgeJointsAreEqual = 5
 
 
 class Bridge():
@@ -135,10 +136,10 @@ class Bridge():
         start_y -= self.pad_y_action
         end_x -= self.pad_x_action
         end_y -= self.pad_y_action
+
+        # Check if joints are equal
         if start_x == end_x and start_y == end_y:
-            print("!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!")
-            print("Start and End Joint Coords are the Same!")
-            print("!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!")
+            return BridgeError.BridgeJointsAreEqual
         
         # Set initial bridge_error:
         bridge_error = BridgeError.BridgeNoError
@@ -182,10 +183,6 @@ class Bridge():
         self.members.append(member)
         self.member_coords[start_joint.number] = end_joint.number
         self.member_coords[end_joint.number] = start_joint.number
-        if member.length == 0:
-            print("!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!")
-            print("Member Length Equals Zero!")
-            print("!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!=!")
 
         return bridge_error
 

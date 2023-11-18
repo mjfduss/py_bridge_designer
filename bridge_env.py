@@ -59,7 +59,7 @@ class BridgeEnv(gym.Env):
             complete = True
             penalty = 10
             return _reward * penalty, complete
-        elif bridge_error == BridgeError.BridgeJointOutOfBounds:
+        elif bridge_error == BridgeError.BridgeJointOutOfBounds or bridge_error == BridgeError.BridgeJointsAreEqual:
             complete = False
             return -4, complete
         elif bridge_error == BridgeError.BridgeJointNotConnected:
