@@ -45,7 +45,7 @@ class Bridge():
         self.matrix_x = 256
         self.matrix_y = 256
         self.max_joints = 128
-        self.state_size = self.max_joints * 2 * 2
+        self.state_size = (self.max_joints + 2) * 2 * 2
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
@@ -206,8 +206,9 @@ class Bridge():
 
     def get_state(self) -> List[List[List[int]]]:
         state = []
-        members_added = []
-        for joint in self.joints:
+        """
+        joints_added = dict()
+        for joint in self.load_scenario.prescribed_joints:
             unconnected_joint = [joint.x, joint.y, -1, -1, -1, -1, -1]
             if self.n_members == 0:
                 # Return list of initial joints
@@ -216,10 +217,12 @@ class Bridge():
                 # Joint present but not yet used
                 state += unconnected_joint
             else:
-                if self.member_coords[joint.number].number not in members_added:
-                    member: Member = self.member_coords[joint.number]
-                    # Return a list of connected members
-                    state += [
+                member: Member = self.member_coords[joint.number]
+                
+                joints_added[joint.number] = True
+        """
+        for member in self.members:
+            state += [
                         member.start_joint.x, 
                         member.start_joint.y, 
                         member.end_joint.x, 
@@ -227,7 +230,6 @@ class Bridge():
                         member.cross_section.material_index, 
                         member.cross_section.section, 
                         member.cross_section.size]
-                    members_added.append(member.number)
         
         # fill in rest of the observation vector with -1
         while len(state) < self.state_size:
