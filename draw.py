@@ -90,7 +90,15 @@ def draw_bridge(bridge: Bridge, width=850, height=700, line_thickness=2):
              sketch_y(bridge.load_scenario.over_grids)),
         color=(127, 127, 127),
         thickness=line_thickness // 2)
-
+    
+    # Draw the prescribed joints
+    for j in bridge.load_scenario.prescribed_joints:
+        cv2.circle(image,
+                   center=(sketch_x(j.x), sketch_y(j.y)),
+                   radius=line_thickness + 3,
+                   color=(127, 127, 127),
+                   thickness=line_thickness - 1)
+        
     for member in bridge.members:
         j1 = member.start_joint
         j2 = member.end_joint
