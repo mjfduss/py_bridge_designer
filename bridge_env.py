@@ -34,10 +34,10 @@ class BridgeEnv(gym.Env):
 
         # Define observation space
         self.observation_space = spaces.Box(
-            low=0,
-            high=1,
-            shape=[2, self.bridge.matrix_y, self.bridge.matrix_x],
-            dtype=np.int8)
+            low=-1,
+            high=max(action_size[0], action_size[1]),
+            shape=[self.bridge.max_joints * 2, len(action_size)],
+            dtype=np.int16)
 
     def _rand_load_scenario_index(self) -> int:
         #return int(self.np_random.uniform(low=0, high=392))
@@ -48,7 +48,7 @@ class BridgeEnv(gym.Env):
                           bridge_error: BridgeError,
                           bridge_cost: int) -> Tuple[float, bool]:
 
-        _reward = round(-(bridge_cost * .0001), 4)
+        _reward = round(-(bridge_cost * .000001), 4)
         if bridge_error == BridgeError.BridgeNoError:
             if bridge_valid:
                 complete = True
@@ -62,7 +62,7 @@ class BridgeEnv(gym.Env):
             return _reward * penalty, complete
         elif bridge_error == BridgeError.BridgeJointOutOfBounds or bridge_error == BridgeError.BridgeJointsAreEqual:
             complete = False
-            return -20, complete
+            return -40, complete
         elif bridge_error == BridgeError.BridgeJointNotConnected:
             complete = False
             return -2, complete
@@ -74,7 +74,7 @@ class BridgeEnv(gym.Env):
 
     def _get_observation(self):
         """This should not be called before reset()"""
-        return np.array(self.bridge.get_state(), dtype=np.int8)
+        return np.array(self.bridge.get_state(), dtype=np.int16)
 
     def _get_info(self, current_error=BridgeError.BridgeNoError, bridge_valid=False):
         """This should not be called before reset()"""
@@ -105,10 +105,10 @@ class BridgeEnv(gym.Env):
 
         # Define observation space
         self.observation_space = spaces.Box(
-            low=0,
-            high=1,
-            shape=[2, self.bridge.matrix_y, self.bridge.matrix_x],
-            dtype=np.int8,
+            low=-1,
+            high=max(action_size[0], action_size[1]),
+            shape=[self.bridge.max_joints * 2, len(action_size)],
+            dtype=np.int16,
             seed=seed)
 
         # Return the observation and info

@@ -44,7 +44,7 @@ class Bridge():
         self.min_y = -96
         self.matrix_x = 256
         self.matrix_y = 256
-        self.max_joints = 256  # it is best if max joints and maxtrix_y are the same value
+        self.max_joints = 128  # it is best if max joints and maxtrix_y are the same value
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
@@ -184,8 +184,8 @@ class Bridge():
             grid_size=self.load_scenario.grid_size
         )
         self.members.append(member)
-        self.member_coords[start_joint.number] = end_joint.number
-        self.member_coords[end_joint.number] = start_joint.number
+        self.member_coords[start_joint.number] = member #end_joint.number
+        self.member_coords[end_joint.number] = member #start_joint.number
 
         return bridge_error
 
@@ -203,6 +203,36 @@ class Bridge():
         return zeros
 
     def get_state(self) -> List[List[List[int]]]:
+        state = []
+        members_added = []
+        for joint in self.joints:
+            unconnected_joint = [joint.x, joint.y, -1, -1, -1, -1, -1]
+            if self.n_members == 0:
+                # Return list of initial joints
+                state.append(unconnected_joint)
+            elif joint.number not in self.member_coords:
+                # Joint present but not yet used
+                state.append(unconnected_joint)
+            else:
+                if self.member_coords[joint.number].number not in members_added:
+                    member: Member = self.member_coords[joint.number]
+                    # Return a list of connected members
+                    state.append([
+                        member.start_joint.x, 
+                        member.start_joint.y, 
+                        member.end_joint.x, 
+                        member.end_joint.y, 
+                        member.cross_section.material_index, 
+                        member.cross_section.section, 
+                        member.cross_section.size])
+                    members_added.append(member.number)
+        
+        # fill in rest of the observation vector with -1
+        while len(state) < self.max_joints * 2:
+            state.append([-1, -1, -1, -1, -1, -1, -1])
+        
+        return state
+           #[16, 0, 24, 16, 0, 0, 18]     
         """Get the current state of the bridge as an 3D adjacency tensor
         Returns:
             An adjacency tensor in the shape (2, self.matrix_y, self.matrix_x) with values {0,1}
@@ -211,7 +241,7 @@ class Bridge():
             2nd matrix representing the member connections
                 - 1 if a member exists between that joint and 0 otherwise
                 - Technically, only the shape (self.matrix_y, self.matrix_y) is considered and the rest is padded
-        """
+        
 
         coord_matrix = self._zeros()  # initialize the 1st matrix to all zeros
         match_count = 0
@@ -236,7 +266,7 @@ class Bridge():
                 member_matrix[end_joint][start_joint] = 1
 
         return [coord_matrix, member_matrix]
-
+        """
     # ===========================================
     # Analysis Functions
     # ===========================================

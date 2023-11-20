@@ -21,6 +21,7 @@ class CrossSection():
                  section: int,
                  size: int):
         self.material = parameters.materials[material_index]  # Between 0 and 2
+        self.material_index = material_index
         self.section = section  # either 0 for Bar or 1 for Tube
         self.size = size  # Between 0 and 32
 
