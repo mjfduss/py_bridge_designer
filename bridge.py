@@ -45,7 +45,7 @@ class Bridge():
         self.matrix_x = 256
         self.matrix_y = 256
         self.max_joints = 128
-        self.state_size = self.max_joints * 2
+        self.state_size = self.max_joints * 2 * 2
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
