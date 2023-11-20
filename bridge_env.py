@@ -36,7 +36,7 @@ class BridgeEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=-256,
             high=256,
-            shape=[self.bridge.state_size],
+            shape=self._get_observation().shape,
             dtype=np.int16)
 
     def _rand_load_scenario_index(self) -> int:
@@ -107,7 +107,7 @@ class BridgeEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=-256,
             high=256,
-            shape=[self.bridge.state_size],
+            shape=self._get_observation().shape,
             dtype=np.int16,
             seed=seed)
         
