@@ -44,13 +44,27 @@ class Bridge():
         self.min_y = -96
         self.matrix_x = 256
         self.matrix_y = 256
-        self.max_joints = 128  # it is best if max joints and maxtrix_y are the same value
+        self.max_joints = 128
+        self.state_size = self.max_joints * 2
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
         self.n_load_instances = 0
+        
+        # Setup padding for input and output
         self.pad_x_action = 0
         self.pad_y_action = 0
+        self.max_x_action = self.load_scenario.max_x + 1
+        self.max_y_action = self.max_y + 1
+        self.min_x_action = self.load_scenario.min_x
+        self.min_y_action_value = self.min_y
+        if self.min_x_action < 0:
+            self.pad_x_action = abs(self.min_x_action)
+        if self.min_y_action_value < 0:
+            self.pad_y_action = abs(self.min_y_action_value)
+        self.max_x_action += self.pad_x_action
+        self.max_y_action += self.pad_y_action
+        
 
     # ===========================================
     # Joints and Members Functions
@@ -94,19 +108,7 @@ class Bridge():
         return True, BridgeError.BridgeJointNotConnected  # joint added
 
     def get_size_of_add_member_parameters(self) -> List[int]:
-        max_x_action = self.load_scenario.max_x + 1
-        max_y_action = self.max_y + 1
-        min_x_action = self.load_scenario.min_x
-        min_y_action_value = self.min_y
-        if min_x_action < 0:
-            self.pad_x_action = abs(min_x_action)
-        if min_y_action_value < 0:
-            self.pad_y_action = abs(min_y_action_value)
-
-        max_x_action += self.pad_x_action
-        max_y_action += self.pad_y_action
-
-        size = [max_x_action, max_y_action, max_x_action, max_y_action, self.max_material_types,
+        size = [self.max_x_action, self.max_y_action, self.max_x_action, self.max_y_action, self.max_material_types,
                 self.max_section_types, self.max_section_size]
 
         return size
@@ -209,27 +211,27 @@ class Bridge():
             unconnected_joint = [joint.x, joint.y, -1, -1, -1, -1, -1]
             if self.n_members == 0:
                 # Return list of initial joints
-                state.append(unconnected_joint)
+                state += unconnected_joint
             elif joint.number not in self.member_coords:
                 # Joint present but not yet used
-                state.append(unconnected_joint)
+                state += unconnected_joint
             else:
                 if self.member_coords[joint.number].number not in members_added:
                     member: Member = self.member_coords[joint.number]
                     # Return a list of connected members
-                    state.append([
+                    state += [
                         member.start_joint.x, 
                         member.start_joint.y, 
                         member.end_joint.x, 
                         member.end_joint.y, 
                         member.cross_section.material_index, 
                         member.cross_section.section, 
-                        member.cross_section.size])
+                        member.cross_section.size]
                     members_added.append(member.number)
         
         # fill in rest of the observation vector with -1
-        while len(state) < self.max_joints * 2:
-            state.append([-1, -1, -1, -1, -1, -1, -1])
+        while len(state) < self.state_size:
+            state.append(-1)
         
         return state
            #[16, 0, 24, 16, 0, 0, 18]     
