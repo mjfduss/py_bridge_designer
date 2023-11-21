@@ -237,10 +237,12 @@ class Bridge():
                 member.cross_section.material_index,
                 member.cross_section.section,
                 member.cross_section.size]
-
-        # fill in rest of the observation vector with -1
-        while len(state) < self.state_size:
-            state.append(-1)
+        if len(state) > self.state_size:
+            state = state[:self.state_size]
+        else:
+            # fill in rest of the observation vector with -1
+            while len(state) < self.state_size:
+                state.append(-1)
 
         return state
         # [16, 0, 24, 16, 0, 0, 18]
