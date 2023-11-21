@@ -45,12 +45,13 @@ class Bridge():
         self.matrix_x = 256
         self.matrix_y = 256
         self.max_joints = 128
-        self.state_size = (self.max_joints + 2) * 2 * 7
+        self.state_size = (self.max_joints +
+                           self.load_scenario.n_prescribed_joints) * 2 * 7
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
         self.n_load_instances = 0
-        
+
         # Setup padding for input and output
         self.pad_x_action = 0
         self.pad_y_action = 0
@@ -64,7 +65,6 @@ class Bridge():
             self.pad_y_action = abs(self.min_y_action_value)
         self.max_x_action += self.pad_x_action
         self.max_y_action += self.pad_y_action
-        
 
     # ===========================================
     # Joints and Members Functions
@@ -145,10 +145,10 @@ class Bridge():
         # Check if joints are equal
         if start_x == end_x and start_y == end_y:
             return BridgeError.BridgeJointsAreEqual
-        
+
         # Set initial bridge_error:
         bridge_error = BridgeError.BridgeNoError
-        
+
         # Check if joints already exists
         if not (start_x, start_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
@@ -186,8 +186,8 @@ class Bridge():
             grid_size=self.load_scenario.grid_size
         )
         self.members.append(member)
-        self.member_coords[start_joint.number] = member #end_joint.number
-        self.member_coords[end_joint.number] = member #start_joint.number
+        self.member_coords[start_joint.number] = member  # end_joint.number
+        self.member_coords[end_joint.number] = member  # start_joint.number
 
         return bridge_error
 
@@ -206,7 +206,6 @@ class Bridge():
 
     def get_state(self) -> List[List[List[int]]]:
         state = []
-        """
         joints_added = dict()
         for joint in self.load_scenario.prescribed_joints:
             unconnected_joint = [joint.x, joint.y, -1, -1, -1, -1, -1]
@@ -217,26 +216,34 @@ class Bridge():
                 # Joint present but not yet used
                 state += unconnected_joint
             else:
-                member: Member = self.member_coords[joint.number]
-                
-                joints_added[joint.number] = True
-        """
+                if joint.number not in joints_added:
+                    member: Member = self.member_coords[joint.number]
+                    state += [
+                        member.start_joint.x,
+                        member.start_joint.y,
+                        member.end_joint.x,
+                        member.end_joint.y,
+                        member.cross_section.material_index,
+                        member.cross_section.section,
+                        member.cross_section.size]
+                    joints_added[joint.number] = True
+
         for member in self.members:
             state += [
-                        member.start_joint.x, 
-                        member.start_joint.y, 
-                        member.end_joint.x, 
-                        member.end_joint.y, 
-                        member.cross_section.material_index, 
-                        member.cross_section.section, 
-                        member.cross_section.size]
-        
+                member.start_joint.x,
+                member.start_joint.y,
+                member.end_joint.x,
+                member.end_joint.y,
+                member.cross_section.material_index,
+                member.cross_section.section,
+                member.cross_section.size]
+
         # fill in rest of the observation vector with -1
         while len(state) < self.state_size:
             state.append(-1)
-        
+
         return state
-           #[16, 0, 24, 16, 0, 0, 18]     
+        # [16, 0, 24, 16, 0, 0, 18]
         """Get the current state of the bridge as an 3D adjacency tensor
         Returns:
             An adjacency tensor in the shape (2, self.matrix_y, self.matrix_x) with values {0,1}
