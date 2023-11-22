@@ -89,14 +89,14 @@ class Bridge():
 
         # Check if joint coordinates are outside of bounds of the bridge's load scenario
         # check x
-        if x > self.load_scenario.max_x or x < self.load_scenario.min_x:
+        if x > self.load_scenario.num_length_grids or x < 0:
             # Make sure x is not a cable anchor
             if self.load_scenario.cable_anchors_x is not None and x not in self.load_scenario.cable_anchors_x:
                 # joint rejected
                 return False, BridgeError.BridgeJointOutOfBounds
 
         # check y
-        if y > self.max_y or y < self.min_y:
+        if y > self.load_scenario.over_grids or y < -self.load_scenario.undergrids:
             # joint rejected
             return False, BridgeError.BridgeJointOutOfBounds
 
