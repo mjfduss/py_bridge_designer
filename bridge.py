@@ -353,6 +353,9 @@ class Bridge():
                         joint.number, point_load[2 * joint.number - 1], point_load[2 * joint.number]))
 
     def analyze(self, test_print=False) -> Tuple[bool, int]:
+        if self.n_members == 0:
+            return False, 0.0
+
         self._apply_loads(test_print)
         self.analysis = Analysis(bridge=self, test_print=test_print)
         valid, cost = self.analysis.get_results()
