@@ -96,7 +96,7 @@ class Bridge():
                 return False, BridgeError.BridgeJointOutOfBounds
 
         # check y
-        if y > self.load_scenario.over_grids or y < -self.load_scenario.undergrids:
+        if y > self.load_scenario.over_grids or y < -self.load_scenario.under_grids:
             # joint rejected
             return False, BridgeError.BridgeJointOutOfBounds
 
