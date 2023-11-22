@@ -40,8 +40,9 @@ class BridgeEnv(gym.Env):
             dtype=np.int16)
 
     def _rand_load_scenario_index(self) -> int:
-        #return int(self.np_random.uniform(low=0, high=392))
-        return int(np.random.uniform(low=0, high=392)) # trying without seeded rng
+        # return int(self.np_random.uniform(low=0, high=392))
+        # trying without seeded rng
+        return int(np.random.uniform(low=0, high=392))
 
     @staticmethod
     def _calculate_reward(bridge_valid: bool,
@@ -65,7 +66,7 @@ class BridgeEnv(gym.Env):
             return -40, complete
         elif bridge_error == BridgeError.BridgeJointNotConnected:
             complete = False
-            return -2, complete
+            return -20, complete
         else:
             complete = True
             print("Error! Unknown BridgeError type in _calculate_reward")
@@ -102,7 +103,7 @@ class BridgeEnv(gym.Env):
 
         self.action_space = spaces.MultiDiscrete(
             nvec=action_size, dtype=np.int16, seed=seed)
-        
+
         # Define observation space
         self.observation_space = spaces.Box(
             low=-256,
@@ -110,7 +111,6 @@ class BridgeEnv(gym.Env):
             shape=self._get_observation().shape,
             dtype=np.int16,
             seed=seed)
-        
 
         # Return the observation and info
         observation = self._get_observation()
@@ -123,16 +123,19 @@ class BridgeEnv(gym.Env):
             action[0], action[1], action[2], action[3], action[4], action[5], action[6])
 
         bridge_valid, bridge_cost = self.bridge.analyze(self.test_print)
-        reward, terminated = self._calculate_reward(bridge_valid, bridge_error, bridge_cost)
+        reward, terminated = self._calculate_reward(
+            bridge_valid, bridge_error, bridge_cost)
 
         observation = self._get_observation()
-        info = self._get_info(current_error=bridge_error, bridge_valid=bridge_valid)
+        info = self._get_info(current_error=bridge_error,
+                              bridge_valid=bridge_valid)
 
         return observation, reward, terminated, False, info
 
     def render(self):
         if self.render_mode == "rgb_array":
             return self.bridge.get_image()
+
 
 """
 # Testing code
