@@ -66,7 +66,7 @@ class BridgeEnv(gym.Env):
             return -40, complete
         elif bridge_error == BridgeError.BridgeJointNotConnected:
             complete = False
-            return -20, complete
+            return -2, complete
         else:
             complete = True
             print("Error! Unknown BridgeError type in _calculate_reward")

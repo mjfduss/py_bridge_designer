@@ -45,7 +45,8 @@ class Bridge():
         self.matrix_x = 256
         self.matrix_y = 256
         self.max_joints = 128
-        self.state_size = 2048 #(self.max_joints + self.load_scenario.n_prescribed_joints) * 2 * 7
+        # (self.max_joints + self.load_scenario.n_prescribed_joints) * 2 * 7
+        self.state_size = 2048
         self.max_material_types = 3
         self.max_section_types = 2
         self.max_section_size = 33
@@ -88,14 +89,14 @@ class Bridge():
 
         # Check if joint coordinates are outside of bounds of the bridge's load scenario
         # check x
-        if x > self.load_scenario.max_x or x < self.load_scenario.min_x:
+        if x > self.load_scenario.num_length_grids or x < 0:
             # Make sure x is not a cable anchor
             if self.load_scenario.cable_anchors_x is not None and x not in self.load_scenario.cable_anchors_x:
                 # joint rejected
                 return False, BridgeError.BridgeJointOutOfBounds
 
         # check y
-        if y > self.max_y or y < self.min_y:
+        if y > self.load_scenario.over_grids or y < self.min_y:
             # joint rejected
             return False, BridgeError.BridgeJointOutOfBounds
 
@@ -148,7 +149,11 @@ class Bridge():
         # Set initial bridge_error:
         bridge_error = BridgeError.BridgeNoError
 
-        # Check if joints already exists
+        # Enfore that one of the joints must already exist
+        if (start_x, start_y) not in self.joint_coords and (end_x, end_y) not in self.joint_coords:
+            return BridgeError.BridgeJointNotConnected
+
+        # Add new joint on either end if needed
         if not (start_x, start_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
                 coords=(start_x, start_y))
@@ -156,7 +161,7 @@ class Bridge():
                 # member rejected because of joint
                 return bridge_error
 
-        if not (end_x, end_y) in self.joint_coords:
+        elif not (end_x, end_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
                 coords=(end_x, end_y))
             if not joint_accepted:
