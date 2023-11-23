@@ -56,7 +56,7 @@ class BridgeEnv(gym.Env):
                 return _reward, complete
             else:
                 complete = False
-                return -1, complete
+                return 1, complete
         elif bridge_error == BridgeError.BridgeAtMaxJoints:
             complete = True
             penalty = 10
