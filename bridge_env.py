@@ -34,10 +34,10 @@ class BridgeEnv(gym.Env):
 
         # Define observation space
         self.observation_space = spaces.Box(
-            low=-256,
-            high=256,
+            low=0,
+            high=1,
             shape=self._get_observation().shape,
-            dtype=np.int16)
+            dtype=np.int8)
 
     def _rand_load_scenario_index(self) -> int:
         # return int(self.np_random.uniform(low=0, high=392))
@@ -75,7 +75,7 @@ class BridgeEnv(gym.Env):
 
     def _get_observation(self):
         """This should not be called before reset()"""
-        return np.array(self.bridge.get_state(), dtype=np.int16)
+        return np.array(self.bridge.get_state(), dtype=np.int8)
 
     def _get_info(self, current_error=BridgeError.BridgeNoError, bridge_valid=False):
         """This should not be called before reset()"""
@@ -106,10 +106,10 @@ class BridgeEnv(gym.Env):
 
         # Define observation space
         self.observation_space = spaces.Box(
-            low=-256,
-            high=256,
+            low=0,
+            high=1,
             shape=self._get_observation().shape,
-            dtype=np.int16,
+            dtype=np.int8,
             seed=seed)
 
         # Return the observation and info
