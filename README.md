@@ -8,5 +8,7 @@ Implementation reference was the C code created for a Ruby plugin for the Bridge
 * note: developed typing anotations requiring >= Python 3.6
 
 ### Gym Env Wrapper
-If you wish to use this for Reinforcement Learning as a [Gym](https://gymnasium.farama.org/) enviroment, then make sure to install the gymnasium requirements:
+Can be used with or without the bridge_env.py file.
+
+If you wish to use or modify the bridge_env.py for Reinforcement Learning as a [Gym](https://gymnasium.farama.org/) enviroment, then make sure to install the gymnasium requirements:
 `pip install gymnasium`
