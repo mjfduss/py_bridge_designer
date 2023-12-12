@@ -1,3 +1,14 @@
+"""
+members.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/internal.h
+by Gene K. Ressler
+
+"""
 from math import sqrt
 from py_bridge_designer.parameters import Params
 

@@ -1,6 +1,17 @@
+"""
+scenario_descriptions.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/scenario_descriptors.h
+by Gene K. Ressler
+
+"""
 scenario_descriptions_table = {
-    0:("1050824100", "27A",  89700.00),
-    1:("1051220100", "32A",  98400.00),
+    0: ("1050824100", "27A",  89700.00),
+    1: ("1051220100", "32A",  98400.00),
     2: ("1051616100", "36A", 108400.00),
     3: ("1052012100", "39A", 114900.00),
     4: ("1052408100", "41A", 122800.00),

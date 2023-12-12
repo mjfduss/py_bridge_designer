@@ -1,3 +1,14 @@
+"""
+analysis.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/analysis.c
+by Gene K. Ressler
+
+"""
 from __future__ import annotations
 from enum import Enum
 from math import sqrt

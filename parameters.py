@@ -1,3 +1,14 @@
+"""
+parameters.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/params.c
+by Gene K. Ressler
+
+"""
 from typing import List
 from enum import Enum
 

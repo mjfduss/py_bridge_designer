@@ -1,3 +1,14 @@
+"""
+draw.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/bridge_sketch.c
+by Gene K. Ressler
+
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple
 import cv2
@@ -60,7 +71,8 @@ def draw_bridge(bridge: Bridge, width=850, height=700, line_thickness=2):
 
     # Setup the variables
     bridge_width_grids = bridge.load_scenario.num_length_grids
-    bridge_height_grids = bridge.load_scenario.over_grids + bridge.load_scenario.under_grids
+    bridge_height_grids = bridge.load_scenario.over_grids + \
+        bridge.load_scenario.under_grids
 
     bridge_left_anchor_margin = CABLE_ANCHORAGE_X_OFFSET if bridge.load_scenario.support_type == CABLE_SUPPORT_LEFT else 0
     bridge_right_anchor_margin = CABLE_ANCHORAGE_X_OFFSET if bridge.load_scenario.support_type == CABLE_SUPPORT_BOTH else 0
@@ -90,7 +102,7 @@ def draw_bridge(bridge: Bridge, width=850, height=700, line_thickness=2):
              sketch_y(bridge.load_scenario.over_grids)),
         color=(127, 127, 127),
         thickness=line_thickness // 2)
-    
+
     # Draw the prescribed joints
     for j in bridge.load_scenario.prescribed_joints:
         cv2.circle(image,
@@ -98,7 +110,7 @@ def draw_bridge(bridge: Bridge, width=850, height=700, line_thickness=2):
                    radius=line_thickness + 3,
                    color=(127, 127, 127),
                    thickness=line_thickness - 1)
-        
+
     for member in bridge.members:
         j1 = member.start_joint
         j2 = member.end_joint
@@ -110,10 +122,11 @@ def draw_bridge(bridge: Bridge, width=850, height=700, line_thickness=2):
             else:
                 compressive = bridge.analysis.member_strength[member.number].compressive
                 compression_intensity = bridge.analysis.max_forces[
-                                            member.number].compression / compressive if compressive > 0 else 0
+                    member.number].compression / compressive if compressive > 0 else 0
 
                 tensile = bridge.analysis.member_strength[member.number].tensile
-                tension_intensity = bridge.analysis.max_forces[member.number].tension / tensile if tensile > 0 else 0
+                tension_intensity = bridge.analysis.max_forces[member.number].tension / \
+                    tensile if tensile > 0 else 0
 
                 if compression_intensity > tension_intensity:
                     r, g, b = _set_color(compression_intensity, 'compression')

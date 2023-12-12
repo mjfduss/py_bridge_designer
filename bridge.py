@@ -1,3 +1,14 @@
+"""
+bridge.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/bridge.c
+by Gene K. Ressler
+
+"""
 from typing import List, Tuple
 from enum import IntEnum
 
@@ -211,7 +222,7 @@ class Bridge():
     def get_state(self) -> List[List[List[int]]]:
         """
         state = []
-        
+
         joints_added = dict()
         for joint in self.load_scenario.prescribed_joints:
             unconnected_joint = [joint.x, joint.y, -1, -1, -1, -1, -1]
@@ -233,7 +244,7 @@ class Bridge():
                         member.cross_section.section,
                         member.cross_section.size]
                     joints_added[joint.number] = True
-        
+
         for member in self.members:
             state += [
                 member.start_joint.x,
@@ -286,7 +297,7 @@ class Bridge():
                 member_matrix[end_joint][start_joint] = 1
 
         return [coord_matrix, member_matrix]
-        
+
     # ===========================================
     # Analysis Functions
     # ===========================================

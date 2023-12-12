@@ -1,3 +1,14 @@
+"""
+cost.py
+
+Py Bridge Designer
+ported from C by Nathan Hartzler
+
+Implementation reference:
+https://sourceforge.net/p/wpbdc/rails/ci/master/tree/vendor/gems/WPBDC/ext/WPBDC/bridge_cost.c
+by Gene K. Ressler
+
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
