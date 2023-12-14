@@ -5,7 +5,7 @@ Implementation reference was the C code created for a Ruby plugin for the Bridge
 
 ### Requirements
 `pip install -r requirements.txt`
-* note: developed typing anotations requiring >= Python 3.6
+* note: developed typing annotations requiring >= Python 3.6
 
 ### Gym Env Wrapper
 Can be used with or without the bridge_env.py file.
