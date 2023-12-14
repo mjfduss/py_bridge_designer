@@ -1,3 +1,9 @@
+"""
+bridge_env.py
+
+Py Bridge Designer
+by Nathan Hartzler
+"""
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces

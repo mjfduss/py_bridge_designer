@@ -89,6 +89,8 @@ class Bridge():
             coords: Tuple[int] in the shape (x,y)
         Returns:
             bool True if joint added, False if joint was rejected
+        Note:
+            Designed by Nathan Hartzler, not ported from the C library
         """
         x = coords[0]
         y = coords[1]
@@ -145,6 +147,8 @@ class Bridge():
             size: int between 0 and 32
         Returns:
             bool True if member added, False if member was rejected
+        Note:
+            Designed by Nathan Hartzler, not ported from the C library
         """
         # Apply the padding, as real bridge coordinates may take negative values
         # but Env Action is 0 or greater
@@ -219,7 +223,40 @@ class Bridge():
             zeros.append(row)
         return zeros
 
-    def get_state(self) -> List[List[List[int]]]:
+    def _get_vecV1_state(self) -> List[int]:
+        """Get the current state of the bridge as a 1D Vector
+        Returns:
+            A (1 x 2048) vector with added Members in the form of their 1 x 7 action such as: 16, 0, 24, 16, 0, 0, 18
+        Note:
+            Designed by Nathan Hartzler, not ported from the C library
+        """
+        state = []
+
+        for member in self.members:
+            state += [
+                member.start_joint.x,
+                member.start_joint.y,
+                member.end_joint.x,
+                member.end_joint.y,
+                member.cross_section.material_index,
+                member.cross_section.section,
+                member.cross_section.size]
+        if len(state) > self.state_size:
+            state = state[:self.state_size]
+        else:
+            # fill in rest of the observation vector with -1
+            while len(state) < self.state_size:
+                state.append(-1)
+
+        return state
+
+    def _get_vecV2_state(self) -> List[int]:
+        """Get the current state of the bridge as a 1D Vector
+        Returns:
+            A (1 x 2048) vector with added Members in the form of their 1 x 7 action such as: 16, 0, 24, 16, 0, 0, 18
+            and the unconnected Joints in the form of x, y, -1, -1, -1, -1, -1
+        Note:
+            Designed by Nathan Hartzler, not ported from the C library
         """
         state = []
 
@@ -262,9 +299,9 @@ class Bridge():
                 state.append(-1)
 
         return state
-        # [16, 0, 24, 16, 0, 0, 18]
-        """
-        """Get the current state of the bridge as an 3D adjacency tensor
+
+    def get_state(self) -> List[List[List[int]]]:
+        """Get the current state of the bridge as a 3D adjacency tensor
         Returns:
             An adjacency tensor in the shape (2, self.matrix_y, self.matrix_x) with values {0,1}
             1st matrix representing the joint coordinates
@@ -272,6 +309,8 @@ class Bridge():
             2nd matrix representing the member connections
                 - 1 if a member exists between that joint and 0 otherwise
                 - Technically, only the shape (self.matrix_y, self.matrix_y) is considered and the rest is padded
+        Note:
+            Designed by Nathan Hartzler, not ported from the C library
         """
 
         coord_matrix = self._zeros()  # initialize the 1st matrix to all zeros
