@@ -36,7 +36,7 @@ class BridgeEnv(gym.Env):
             low=min(action_size),
             high=max(action_size),
             shape=(len(action_size),),
-            dtype=np.int16)
+            dtype=np.float32)
 
         # Define observation space
         self.observation_space = spaces.Box(
@@ -81,7 +81,8 @@ class BridgeEnv(gym.Env):
 
     def _get_observation(self):
         """This should not be called before reset()"""
-        return np.array(self.bridge.get_state(), dtype=np.int8)
+        obs = np.array(self.bridge.get_state(), dtype=np.int8)
+        return np.reshape(obs, (np.prod(obs.shape),))
 
     def _get_info(self, current_error=BridgeError.BridgeNoError, bridge_valid=False):
         """This should not be called before reset()"""
@@ -111,7 +112,7 @@ class BridgeEnv(gym.Env):
             low=0,
             high=max(action_size),
             shape=(len(action_size),),
-            dtype=np.int16,
+            dtype=np.float32,
             seed=seed)
 
         # Define observation space
@@ -133,7 +134,7 @@ class BridgeEnv(gym.Env):
         new_action = []
         for i in range(len(sizes)):
             max_x = sizes[i]
-            x = action[i]
+            x = int(action[i])
             new_action.append(x if x < max_x else max_x - 1)
         return new_action
 
