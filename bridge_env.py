@@ -32,8 +32,11 @@ class BridgeEnv(gym.Env):
         # Define action space
         action_size = self.bridge.get_size_of_add_member_parameters()
 
-        self.action_space = spaces.MultiDiscrete(
-            nvec=action_size, dtype=np.int16)
+        self.action_space = spaces.Box(
+            low=min(action_size),
+            high=max(action_size),
+            shape=(len(action_size),),
+            dtype=np.int16)
 
         # Define observation space
         self.observation_space = spaces.Box(
@@ -104,8 +107,12 @@ class BridgeEnv(gym.Env):
         # Define action space
         action_size = self.bridge.get_size_of_add_member_parameters()
 
-        self.action_space = spaces.MultiDiscrete(
-            nvec=action_size, dtype=np.int16, seed=seed)
+        self.action_space = spaces.Box(
+            low=0,
+            high=max(action_size),
+            shape=(len(action_size),),
+            dtype=np.int16,
+            seed=seed)
 
         # Define observation space
         self.observation_space = spaces.Box(
@@ -121,7 +128,17 @@ class BridgeEnv(gym.Env):
 
         return observation, info
 
+    def _clip_action(self, action):
+        sizes = self.bridge.get_size_of_add_member_parameters()
+        new_action = []
+        for i in range(len(sizes)):
+            max_x = sizes[i]
+            x = action[i]
+            new_action.append(x if x < max_x else max_x - 1)
+        return new_action
+
     def step(self, action):
+        action = self._clip_action(action)
         bridge_error = self.bridge.add_member(
             action[0], action[1], action[2], action[3], action[4], action[5], action[6])
 
