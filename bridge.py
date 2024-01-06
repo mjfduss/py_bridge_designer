@@ -166,7 +166,7 @@ class Bridge():
 
         # Enfore that one of the joints must already exist
         if (start_x, start_y) not in self.joint_coords and (end_x, end_y) not in self.joint_coords:
-            return BridgeError.BridgeJointNotConnected
+            bridge_error = BridgeError.BridgeJointNotConnected
 
         # Add new joint on either end if needed
         if not (start_x, start_y) in self.joint_coords:
