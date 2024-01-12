@@ -118,7 +118,7 @@ class Bridge():
         joint = Joint(number=self.n_joints, x=x, y=y)
         self.joints.append(joint)
         self.joint_coords[coords] = joint
-        return True, BridgeError.BridgeJointNotConnected  # joint added
+        return True, BridgeError.BridgeNoError  # joint added
 
     def get_size_of_add_member_parameters(self) -> List[int]:
         size = [self.max_x_action, self.max_y_action, self.max_x_action, self.max_y_action, self.max_material_types,
@@ -164,9 +164,6 @@ class Bridge():
         # Set initial bridge_error:
         bridge_error = BridgeError.BridgeNoError
 
-        # Enfore that one of the joints must already exist
-        if (start_x, start_y) not in self.joint_coords and (end_x, end_y) not in self.joint_coords:
-            bridge_error = BridgeError.BridgeJointNotConnected
 
         # Add new joint on either end if needed
         if not (start_x, start_y) in self.joint_coords:
@@ -176,12 +173,16 @@ class Bridge():
                 # member rejected because of joint
                 return bridge_error
 
-        elif not (end_x, end_y) in self.joint_coords:
+        if not (end_x, end_y) in self.joint_coords:
             joint_accepted, bridge_error = self._add_joint(
                 coords=(end_x, end_y))
             if not joint_accepted:
                 # member rejected because of joint
                 return bridge_error
+
+        # Enfore that one of the joints must already exist
+        if (start_x, start_y) not in self.joint_coords and (end_x, end_y) not in self.joint_coords:
+            bridge_error = BridgeError.BridgeJointNotConnected
 
         # Get joints
         start_joint: Joint = self.joint_coords[(start_x, start_y)]
