@@ -3,6 +3,9 @@ A Python implementation of the [Bridge Designer 2016](https://bridgedesigner.org
 
 Implementation reference was the C code created for a Ruby plugin for the Bridge Designer and Contest Rails Code - availible here: https://sourceforge.net/p/wpbdc/rails/ci/master/tree/
 
+## IEEE Conference Paper
+This code is part of the published conference paper, [Designing Architecture in a Bridge Engineering Simulation](https://ieeexplore.ieee.org/document/10639984) presented at the [2024 IEEE 7th International Conference on Industrial Cyber-Physical Systems (ICPS)](https://ieeexplore.ieee.org/xpl/conhome/10639954/proceeding)
+
 ### Requirements
 `pip install -r requirements.txt`
 * note: developed typing annotations requiring >= Python 3.6
